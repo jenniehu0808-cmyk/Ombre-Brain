@@ -1,0 +1,208 @@
+<title>__TITLE__</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/* Layout: the rose fills the stage; a narrow instrument panel on the right (below, on phones) holds views, toggles and print facts. */
+:root {
+  --bg: #f4f0e8; --fg: #1e1a15; --muted: #6f675b; --panel: #ebe5da; --line: #d5cdbf;
+  --accent: #8d1f31; --btn: #f8f5ee; --btn-on: #1e1a15; --btn-on-fg: #f4f0e8;
+  --stage: #efeae0;
+  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-body: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c0c0d; --fg: #ebe6dc; --muted: #9a9389; --panel: #151517; --line: #2a2a2e;
+    --accent: #d8a0a8; --btn: #1f1f22; --btn-on: #ebe6dc; --btn-on-fg: #0c0c0d; --stage: #0c0c0d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c0c0d; --fg: #ebe6dc; --muted: #9a9389; --panel: #151517; --line: #2a2a2e;
+  --accent: #d8a0a8; --btn: #1f1f22; --btn-on: #ebe6dc; --btn-on-fg: #0c0c0d; --stage: #0c0c0d;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 300px; height: 100%; }
+.stage { position: relative; min-width: 0; background: var(--stage); }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hud { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: 12px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: .04em; pointer-events: none; }
+.loading { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-size: 22px; color: var(--muted); }
+.panel { min-width: 0; overflow: auto; background: var(--panel); border-left: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 22px;
+  display: flex; flex-direction: column; gap: 18px; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: 34px; line-height: 1; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.sub { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 8px; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+button { font: inherit; font-size: 13px; padding: 7px 11px; border: 1px solid var(--line); background: var(--btn); color: var(--fg); border-radius: 4px; cursor: pointer; }
+button[aria-pressed="true"] { background: var(--btn-on); color: var(--btn-on-fg); border-color: var(--btn-on); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; font-size: 13px; }
+dt { color: var(--muted); } dd { margin: 0; font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.parts { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.parts li { display: grid; grid-template-columns: 14px 1fr auto; align-items: center; gap: 10px; font-size: 13px; }
+.sw { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--line); }
+.parts .n { font-family: var(--font-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.note { font-size: 12.5px; color: var(--muted); margin: 0; }
+.note b { color: var(--fg); font-weight: 500; }
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: 58vh minmax(0, 1fr); }
+  .panel { border-left: 0; border-top: 1px solid var(--line); }
+  h1 { font-size: 28px; }
+}
+@media (prefers-reduced-motion: reduce) { .stage canvas { transition: none; } }
+</style>
+<div class="app">
+  <div class="stage">
+    <canvas id="c" aria-label="3D view of the rose model"></canvas>
+    <div class="loading" id="loading">loading the rose…</div>
+    <div class="hud">drag to orbit · scroll or pinch to zoom · right-drag to pan</div>
+  </div>
+  <aside class="panel">
+    <div>
+      <h1>__TITLE__</h1>
+      <p class="sub">Procedural replica of the reference rose, built for a two-colour FDM print.</p>
+    </div>
+    <div>
+      <p class="lbl">View</p>
+      <div class="row" id="views">
+        <button data-view="top" aria-pressed="false">Top</button>
+        <button data-view="side" aria-pressed="true">Side</button>
+        <button data-view="front" aria-pressed="false">Front</button>
+        <button data-view="iso" aria-pressed="false">Three-quarter</button>
+        <button data-view="under" aria-pressed="false">Underside</button>
+      </div>
+    </div>
+    <div>
+      <p class="lbl">Display</p>
+      <div class="row">
+        <button id="t-colour" aria-pressed="true">Two colours</button>
+        <button id="t-stem" aria-pressed="true">Stem + leaf</button>
+        <button id="t-wire" aria-pressed="false">Wireframe</button>
+        <button id="t-spin" aria-pressed="true">Auto-rotate</button>
+      </div>
+    </div>
+    <div>
+      <p class="lbl">Dimensions</p>
+      <dl>
+        <dt>Flower head</dt><dd>__HEAD_DIMS__</dd>
+        <dt>With stem</dt><dd>__DIMS__</dd>
+        <dt>Triangles</dt><dd>__TRIS__</dd>
+        <dt>Units</dt><dd>mm, Z up</dd>
+      </dl>
+    </div>
+    <div>
+      <p class="lbl">Parts</p>
+      <ul class="parts" id="parts"></ul>
+    </div>
+    <div>
+      <p class="lbl">Print notes</p>
+      <p class="note"><b>Head</b> prints face-up with tree supports; 0.12–0.16 mm layers, 3 walls, petals are 1.2–1.4 mm thick. <b>Stem</b> prints lying flat (leaf side up) and plugs into the socket under the head. STL files are in the repo under <span style="font-family:var(--font-mono)">rose3d/out/</span>.</p>
+    </div>
+  </aside>
+</div>
+<script type="importmap">__IMPORTMAP__</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const DATA = __DATA__;
+const canvas = document.getElementById('c');
+const stage = canvas.parentElement;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const key = new THREE.DirectionalLight(0xffffff, 2.0); key.position.set(40, -60, 120); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 6; key.shadow.bias = -0.0005; scene.add(key);
+const fill = new THREE.DirectionalLight(0xdde6ff, 0.6); fill.position.set(-80, 40, 60); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xffffff, 1.0); rim.position.set(0, 80, -40); scene.add(rim);
+scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+
+function stageColor() { return getComputedStyle(document.documentElement).getPropertyValue('--stage').trim() || '#0c0c0d'; }
+function applyTheme() { scene.background = new THREE.Color(stageColor()); }
+applyTheme();
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch (e) {}
+new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+function decode(p) {
+  const bin = atob(p.b64); const u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const buf = u8.buffer;
+  const q = new Int16Array(buf, 0, p.nv * 3);
+  const n8 = new Int8Array(buf, p.nv * 6, p.nv * 3);
+  let off = p.nv * 9; off += (4 - off % 4) % 4;
+  const idx = new Uint32Array(buf, off, p.nf * 3);
+  const pos = new Float32Array(p.nv * 3), nrm = new Float32Array(p.nv * 3);
+  for (let i = 0; i < p.nv; i++) for (let k = 0; k < 3; k++) {
+    pos[i * 3 + k] = p.lo[k] + (q[i * 3 + k] + 32768) / 65535 * (p.hi[k] - p.lo[k]);
+    nrm[i * 3 + k] = n8[i * 3 + k] / 127;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  return g;
+}
+
+const group = new THREE.Group(); scene.add(group);
+const meshes = {};
+const list = document.getElementById('parts');
+for (const p of DATA.parts) {
+  const dark = (parseInt(p.color.slice(1), 16) & 0xff) < 0x60;
+  const mat = new THREE.MeshPhysicalMaterial({ color: p.color, roughness: dark ? 0.32 : 0.45, metalness: dark ? 0.12 : 0.0, clearcoat: dark ? 0.6 : 0.25, clearcoatRoughness: 0.3, side: THREE.DoubleSide });
+  const mesh = new THREE.Mesh(decode(p), mat); mesh.castShadow = true; mesh.receiveShadow = true;
+  mesh.userData = { color: p.color, dark };
+  group.add(mesh); meshes[p.name] = mesh;
+  const li = document.createElement('li');
+  li.innerHTML = `<span class="sw" style="background:${p.color}"></span><span>${p.name.replace(/_/g, ' ')}</span><span class="n">${p.nf.toLocaleString()} tris</span>`;
+  list.appendChild(li);
+}
+document.getElementById('loading').hidden = true;
+{ const b0 = new THREE.Box3().setFromObject(group); const gr = b0.getBoundingSphere(new THREE.Sphere()).radius;
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(gr * 8, gr * 8), new THREE.ShadowMaterial({ opacity: 0.3 }));
+  ground.position.set(0, 0, b0.min.z - 0.2); ground.receiveShadow = true; scene.add(ground);
+  const sc = key.shadow.camera; sc.left = -gr * 2; sc.right = gr * 2; sc.top = gr * 2; sc.bottom = -gr * 2; sc.near = 1; sc.far = gr * 10;
+  key.target.position.copy(b0.getCenter(new THREE.Vector3())); scene.add(key.target); sc.updateProjectionMatrix(); window.__ground = ground; }
+
+const camera = new THREE.PerspectiveCamera(32, 1, 1, 5000);
+camera.up.set(0, 0, 1);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.dampingFactor = 0.08; controls.autoRotateSpeed = 1.2;
+controls.autoRotate = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+document.getElementById('t-spin').setAttribute('aria-pressed', String(controls.autoRotate));
+
+const DIRS = { top: [0, -0.0001, 1], side: [1, -1.3, 0.55], iso: [1, -1, 1.1], front: [0, -1, 0.25], under: [0.6, -1, -0.8] };
+function bounds() { const b = new THREE.Box3(); group.children.forEach(m => { if (m.visible) b.expandByObject(m); }); return b.getBoundingSphere(new THREE.Sphere()); }
+function setView(name) {
+  const s = bounds(); const v = DIRS[name] || DIRS.iso; const n = Math.hypot(...v); const d = s.radius * 3.2;
+  camera.position.set(s.center.x + v[0] / n * d, s.center.y + v[1] / n * d, s.center.z + v[2] / n * d);
+  controls.target.copy(s.center); controls.update();
+  document.querySelectorAll('#views button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === name)));
+}
+document.querySelectorAll('#views button').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+function toggle(id, fn) {
+  const b = document.getElementById(id);
+  b.addEventListener('click', () => { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); fn(on); });
+}
+toggle('t-colour', on => { for (const m of group.children) m.material.color.set(on ? m.userData.color : '#efe8d8'); });
+toggle('t-stem', on => { for (const [k, m] of Object.entries(meshes)) if (k.startsWith('stem')) m.visible = on; const b = new THREE.Box3(); group.children.forEach(m => { if (m.visible) b.expandByObject(m); }); if (window.__ground) window.__ground.position.z = b.min.z - 0.2; });
+toggle('t-wire', on => { for (const m of group.children) m.material.wireframe = on; });
+toggle('t-spin', on => { controls.autoRotate = on; });
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage); resize(); setView('side');
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+</script>
