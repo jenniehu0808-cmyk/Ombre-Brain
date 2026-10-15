@@ -219,7 +219,7 @@ LAYERS = {
 }
 BASE_Z = -10.5   # underside of the head (stem socket opens here)
 # smooth ogee hip hidden behind the petal bases, narrowing to the stem socket (no turned foot ring)
-RECEPTACLE = [(0, -10.5), (4.0, -10.5), (5.0, -9.6), (6.5, -8.0), (8.0, -6.0), (9.0, -3.0), (9.3, 0.5), (8.8, 4.0),
+RECEPTACLE = [(0, -10.5), (6.5, -10.5), (7.3, -9.4), (8.0, -7.5), (8.6, -5.5), (9.0, -3.0), (9.3, 0.5), (8.8, 4.0),
               (7.5, 7.0), (5.5, 9.0), (0, 10)]
 # domed core inside the hexagonal centre bud; dome top ~0.5 mm under the panel rims
 CORE = [(0, 9.0), (4.5, 9.0), (4.2, 14.0), (4.2, 18.0), (5.0, 21.0), (4.4, 25.0), (3.6, 27.6), (2.2, 28.3), (0, 28.6)]

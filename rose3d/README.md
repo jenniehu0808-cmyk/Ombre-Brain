@@ -17,13 +17,14 @@ Head: 59 × 60 × 43 mm. With stem: 161 mm tall. Petals 1.2–1.5 mm thick.
 | `rose_head_2colour.3mf` | **start here for a two-colour print**: cream body + black whorl already grouped as one object with colours (Bambu Studio, PrusaSlicer, OrcaSlicer open it directly) |
 | `rose_head_cream.stl`, `rose_head_black.stl` | the same two bodies as STL, for slicers that want parts imported separately |
 | `rose_head.stl` | the whole head as one solid body (single-colour print); 5.5 mm socket underneath for the stem |
-| `rose_stem_leaf.stl` | stem (120 mm, ridged, gently curved) with a veined leaf and a peg that plugs into the head |
+| `rose_stem_leaf_flat.stl` / `.3mf` | **stem for printing**: already lying flat on the bed, leaf up; peg plugs into the head |
+| `rose_stem_leaf.stl` | the same stem upright (for the viewer / assembly check) |
 | `rose_all_parts.3mf` | head bodies + stem in one file |
 | `rose_full.stl` | head + stem + leaf fused into one piece (not committed, ~10 MB; `python3 rose.py` regenerates it) |
 | `rose_viewer.html` | interactive 3D viewer (open in any browser) |
 | `rose_head_*.png`, `rose_side.png`, `compare.png` | preview renders and the comparison sheet against the reference |
 | `print_report.txt` | watertightness, wall-thickness and overhang report |
-| `variant_b/` | alternative head with a smoother, more ceramic-looking bowl and bolder crescents (`rose_variant_b.py`); 2-colour 3MF + previews |
+| `classic/` | the earlier six-crescent whorl version (`python3 rose.py --no-logo`); 2-colour 3MF + previews |
 
 ## Printing
 
@@ -64,3 +65,16 @@ watertight solid. `stemleaf.py` builds the stem, peg and veined leaf.
 `render.js` renders previews with three.js in headless Chromium, `compare.py`
 builds the contact sheet, `check_print.py` writes the print report and
 `viewer_build.py` embeds the meshes into the standalone viewer page.
+
+## 新手打印指南（拓竹 P1S / X2D + AMS）
+
+1. 耗材：花瓣用 **PLA 哑光白**（像瓷器，遮层纹），花心用 **PLA 黑**（亮面）；花茎用 PLA 哑光深绿或白。
+   不要用丝绸 PLA（悬垂差、脆）、PETG（拉丝、支撑难拆）、TPU、ABS。
+2. Bambu Studio → 导入 → 同时选中 `rose_head_cream.stl` 和 `rose_head_black.stl` → 弹窗
+   "作为一个对象的多个零件加载？" → **是**。右侧对象列表里给 `head_cream` 选耗材 1（白），
+   `head_black` 选耗材 2（黑）；AMS 里 1 槽白、2 槽黑。（或直接打开 `rose_head_2colour.3mf`，
+   导入时选"仅几何体"。）
+3. 工艺：0.12 mm Fine；**开启支撑 → 树状（自动）**；墙层数 3；填充 15 %；裙边/Brim 外圈 5 mm；
+   其余默认。切片 → 打印。花头约 6–9 小时。
+4. 花茎：导入 `rose_stem_leaf_flat.stl`（已放平、叶子朝上），单色，同样开树状支撑 + Brim。约 1.5–2 小时。
+5. 后处理：用镊子/斜口钳轻轻去支撑，花瓣边缘要慢；花茎榫头插进花头底部的孔，松就点一滴胶。
