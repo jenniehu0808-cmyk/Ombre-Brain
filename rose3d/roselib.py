@@ -260,6 +260,8 @@ def export_safe(mesh, path):
             m.fill_holes()
         except Exception:
             pass
+    if not m.is_watertight and mesh.is_watertight:
+        m = mesh.copy()          # quantisation made it worse: export the raw mesh instead
     m.export(path)
     return m
 

@@ -222,6 +222,43 @@ STEM = dict(length=118.0, radius=2.5, taper=0.12, ridges=14, ridge_amp=0.06, lea
             leaf_len=34.0, leaf_w=15.0, leaf_yaw=-50, leaf_pitch=25)
 COLORS = {'bud': 'cream', 'spiral': 'black', 'inner': 'cream', 'outer': 'cream', 'sepals': 'cream'}
 
+# ----------------------------------------------------------------------------
+# logo mode (default): the black whorl is the OpenAI blossom lofted into six standing
+# petals (see logo.py), so the head reads as the logo from the top. A cream hexagonal
+# bud fills the centre, a cream floor + lowered lining petals show through the windows.
+# ----------------------------------------------------------------------------
+LOGO = dict(diameter=40.0, z_bottom=5.0, z_top=27.5, base_scale=0.58, belly=0.05, belly_at=0.72,
+            wave=2.5, wave_phase=None, fillet=1.4, rotate_deg=0.0, split=True, dz=(0.6, -0.4, 0.2, -0.6, 0.4, -0.2),
+            core_top_gap=1.5,      # cream hex bud top sits this far below the black top
+            window_gap=1.2,        # cream plugs in the six windows end this far below the black top
+            floor=[(0, 1.0), (12.0, 1.0), (12.8, 3.0), (12.3, 7.0), (0, 7.0)])
+# cream stack in logo mode: a garden-rose cup of three overlapping whorls around the black logo
+LOGO_LAYERS = {
+    # 5 big reflexed guard petals: low, rolled back a lot
+    'outer': dict(n=5, phase=10, thickness=1.3, params=dict(
+        r_base=5.5, z_base=-7.5, r_top=27.0, z_top=19.0, ctrl=[(14.0, -3.0), (23.0, 8.0)],
+        lip_len=5.0, lip_turn=115, lip_fade=0.3, lip_corner=0.6, span=112, w_base=0.75, w_tip=0.85, u_max=0.5,
+        spiral=0.12, spiral_u=2.5, cup_r=3.5, cup_z=1.5, cup_tip=0.5, ripple_n=2.0, ripple_amp=1.4, side_ripple=0.3,
+        skew=8, roll=0.0, edge_drop=3.5, tip_round=0.5, apex=1.5, crease=1.5),
+        vary={'z_top': [20.5, 17.5, 19.5, 18.0, 19.0], 'r_top': [27.0, 27.8, 26.4, 27.4, 26.8], 'lean': [0, 3, 1, 4, 2]}),
+    # 5 upright cupped petals between them, rims just outside the black whorl
+    'mid': dict(n=5, phase=46, thickness=1.3, params=dict(
+        r_base=5.0, z_base=-5.0, r_top=23.0, z_top=26.0, ctrl=[(12.0, -1.5), (20.5, 12.0)],
+        lip_len=3.0, lip_turn=80, lip_fade=0.35, lip_corner=0.6, span=100, w_base=0.7, w_tip=0.85, u_max=0.5,
+        spiral=0.10, spiral_u=2.5, cup_r=3.0, cup_z=1.0, cup_tip=0.5, ripple_n=2.0, ripple_amp=1.1, side_ripple=0.3,
+        skew=10, roll=0.0, edge_drop=2.5, tip_round=0.4, apex=1.2, crease=1.2),
+        vary={'z_top': [27.0, 25.0, 26.5, 24.5, 26.0], 'r_top': [23.0, 23.8, 22.4, 23.4, 22.8], 'lean': [1, 0, 2, 0, 1]}),
+    # 5 tighter petals hugging the black whorl (tops level with its rim)
+    'inner2': dict(n=5, phase=82, thickness=1.25, params=dict(
+        r_base=4.5, z_base=-2.0, r_top=21.0, z_top=27.5, ctrl=[(10.0, 1.0), (18.5, 15.0)],
+        lip_len=2.2, lip_turn=60, lip_fade=0.4, lip_corner=0.6, span=92, w_base=0.7, w_tip=0.85, u_max=0.5,
+        spiral=0.08, spiral_u=2.5, cup_r=2.5, cup_z=0.5, cup_tip=0.6, ripple_n=1.5, ripple_amp=0.7, side_ripple=0.2,
+        skew=12, roll=0.0, edge_drop=2.0, tip_round=0.3, apex=0.8, crease=1.0),
+        vary={'z_top': [28.0, 26.5, 27.5, 26.0, 27.0], 'r_top': [21.0, 21.6, 20.6, 21.4, 20.8], 'lean': [0, 1, 0, 2, 1]}),
+    'sepals': copy.deepcopy(LAYERS['sepals']),
+}
+LOGO_COLORS = {k: 'cream' for k in LOGO_LAYERS}
+
 
 def deep_update(d, u):
     for k, v in u.items():
@@ -234,8 +271,12 @@ def deep_update(d, u):
 
 # ----------------------------------------------------------------------------
 def build(res=1.0, union=True, parts_wanted=('head', 'stem'), R=30.0, layers=None, stem_cfg=None,
-          receptacle_prof=None, colors=None, verbose=True, core_prof=None):
-    layers = layers or LAYERS
+          receptacle_prof=None, colors=None, verbose=True, core_prof=None, logo_cfg=None):
+    logo_active = logo_cfg is not None
+    if logo_active and layers is None:
+        layers = copy.deepcopy(LOGO_LAYERS)
+        colors = dict(LOGO_COLORS, **(colors or {}))
+    layers = copy.deepcopy(layers or LAYERS)
     stem_cfg = stem_cfg or STEM
     receptacle_prof = receptacle_prof or RECEPTACLE
     core_prof = core_prof or CORE
@@ -274,8 +315,44 @@ def build(res=1.0, union=True, parts_wanted=('head', 'stem'), R=30.0, layers=Non
         cfg = dict(stem_cfg); cfg['z_top'] = BASE_Z
         P['stem_leaf'] = stemleaf.build_stem_leaf(res=res, s=s, union=union, cfg=cfg)
 
-    cream = [m for nme, ms in built.items() if colors.get(nme, 'cream') == 'cream' for m in ms] + [receptacle, core]
+    cream = [m for nme, ms in built.items() if colors.get(nme, 'cream') == 'cream' for m in ms] + [receptacle]
     black = [m for nme, ms in built.items() if colors.get(nme) == 'black' for m in ms]
+    if logo_active:
+        import logo as logomod
+        from shapely.geometry import Polygon
+        from shapely import affinity
+        lc = dict(logo_cfg)
+        gap, floor_prof = lc.pop('core_top_gap', 2.5), lc.pop('floor', LOGO['floor'])
+        wgap = lc.pop('window_gap', 2.0)
+        whorl = logomod.logo_whorl(**lc)
+        whorl.apply_scale(s)
+        black.append(whorl)
+        # cream hexagonal bud filling the centre hole (slightly oversized; trimmed by the black later)
+        poly = logomod.logo_polygon(lc['diameter'], lc.get('rotate_deg', 0.0))
+        hole = min((Polygon(h) for h in poly.interiors), key=lambda p: abs(p.centroid.x) + abs(p.centroid.y))
+        hole = affinity.scale(hole, 1.08, 1.08, origin=(0, 0))
+        z0, z1 = lc['z_bottom'] - 1.0, lc['z_top'] - gap
+        hexcore = trimesh.creation.extrude_polygon(hole, z1 - z0)
+        hexcore.apply_translation([0, 0, z0])
+        rin = np.sqrt(hole.area / (2 * np.sqrt(3)))
+        dimple = trimesh.creation.cone(radius=rin * 0.95, height=1.2, sections=48)
+        dimple.apply_translation([0, 0, z1 - 0.05])
+        floor = rl.revolve(floor_prof, n=int(72 * res))
+        plugs = []
+        for h in poly.interiors:   # cream plugs in the six windows (pale petals showing between the arms)
+            hp = Polygon(h)
+            if hp is hole or (abs(hp.centroid.x) + abs(hp.centroid.y)) < 1.0:
+                continue
+            hp = affinity.scale(hp, 1.12, 1.12, origin='centroid')
+            pz0, pz1 = lc['z_bottom'] - 1.0, lc['z_top'] - wgap
+            pm = trimesh.creation.extrude_polygon(hp, pz1 - pz0)
+            pm.apply_translation([0, 0, pz0])
+            plugs.append(pm)
+        for m_ in [hexcore, dimple, floor] + plugs:
+            m_.apply_scale(s)
+        cream += [hexcore, dimple, floor] + plugs
+    else:
+        cream.append(core)
     if union:
         if verbose: print('union: cream ...'); sys.stdout.flush()
         head_cream = rl.union_all(cream)
@@ -288,6 +365,11 @@ def build(res=1.0, union=True, parts_wanted=('head', 'stem'), R=30.0, layers=Non
             head_cream_s = trimesh.boolean.difference([head_cream, socket], engine='manifold', check_volume=False)
         except Exception as e:
             print('socket difference failed:', e); head_s, head_cream_s = head, head_cream
+        if head_black is not None:
+            try:   # the two colour bodies must not overlap: carve the black out of the cream
+                head_cream_s = trimesh.boolean.difference([head_cream_s, head_black], engine='manifold', check_volume=False)
+            except Exception as e:
+                print('cream-black difference failed:', e)
         head_s, head_cream_s = rl.fill_voids(head_s, keep='largest'), rl.fill_voids(head_cream_s, keep='largest')
         if head_black is not None:
             head_black = rl.fill_voids(head_black, keep='big')
@@ -316,10 +398,13 @@ def main(argv=None):
     ap.add_argument('--render', action='store_true')
     ap.add_argument('--views', default='top,side,iso,front')
     ap.add_argument('--prefix', default='rose')
+    ap.add_argument('--no-logo', action='store_true', help='classic spiral whorl instead of the logo whorl')
     ap.add_argument('--params', default=None, help='JSON file: {"layers": {...}, "stem": {...}, "receptacle": [...], "core": [...], "colors": {...}}')
     a = ap.parse_args(argv)
     os.makedirs(a.out, exist_ok=True)
     layers, stem_cfg, rec, colors, core = copy.deepcopy(LAYERS), dict(STEM), list(RECEPTACLE), dict(COLORS), list(CORE)
+    if not a.no_logo:
+        layers, colors = copy.deepcopy(LOGO_LAYERS), dict(LOGO_COLORS)
     if a.params:
         ov = json.load(open(a.params))
         deep_update(layers, ov.get('layers', {}))
@@ -330,8 +415,11 @@ def main(argv=None):
         rec = ov.get('receptacle', rec)
         core = ov.get('core', core)
         colors.update(ov.get('colors', {}))
+    logo_cfg = None if a.no_logo else copy.deepcopy(LOGO)
+    if a.params and logo_cfg is not None and 'logo' in ov:
+        logo_cfg.update(ov['logo'] or {})
     parts = build(res=a.res, union=not a.no_union, parts_wanted=('head', 'stem') if a.only == 'all' else ('head',),
-                  R=a.R, layers=layers, stem_cfg=stem_cfg, receptacle_prof=rec, colors=colors, core_prof=core)
+                  R=a.R, layers=layers, stem_cfg=stem_cfg, receptacle_prof=rec, colors=colors, core_prof=core, logo_cfg=logo_cfg)
     for name, m in parts.items():
         if name.startswith('_'):
             continue
