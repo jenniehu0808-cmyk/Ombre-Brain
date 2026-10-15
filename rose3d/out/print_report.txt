@@ -1,18 +1,18 @@
 == out/rose_head.stl
-   faces=193330  bodies=1  watertight=True  winding=True
-   size = 58.6 x 59.7 x 42.9 mm   volume = 22.0 cm^3  (~27 g PLA solid)
-   wall thickness: min=0.02  p5=1.20  median=1.40 mm (0.9% of samples < 0.8 mm)
-   downward-facing area (needs support if printed face-up): 3.0% of surface
-   bed contact footprint: 1246 verts within 0.5 mm of z_min (-10.5)
+   faces=186876  bodies=1  watertight=True  winding=True
+   size = 60.0 x 61.7 x 43.8 mm   volume = 46.0 cm^3  (~57 g PLA solid)
+   wall thickness: min=0.02  p5=1.05  median=1.24 mm (1.9% of samples < 0.8 mm)
+   downward-facing area (needs support if printed face-up): 8.9% of surface
+   bed contact footprint: 1984 verts within 0.5 mm of z_min (-10.6)
 == out/rose_head_black.stl
-   faces=45908  bodies=1  watertight=True  winding=True
-   size = 40.1 x 42.5 x 31.0 mm   volume = 7.6 cm^3  (~9 g PLA solid)
-   wall thickness: min=0.00  p5=1.40  median=1.40 mm (1.0% of samples < 0.8 mm)
-   downward-facing area (needs support if printed face-up): 2.7% of surface
-   bed contact footprint: 674 verts within 0.5 mm of z_min (1.3)
+   faces=16072  bodies=1  watertight=True  winding=True
+   size = 42.9 x 43.5 x 28.4 mm   volume = 13.1 cm^3  (~16 g PLA solid)
+   wall thickness: min=0.00  p5=1.33  median=2.34 mm (1.2% of samples < 0.8 mm)
+   downward-facing area (needs support if printed face-up): 2.1% of surface
+   bed contact footprint: 354 verts within 0.5 mm of z_min (4.8)
 == out/rose_stem_leaf.stl
    faces=16576  bodies=1  watertight=True  winding=True
    size = 28.1 x 30.9 x 124.6 mm   volume = 2.6 cm^3  (~3 g PLA solid)
-   wall thickness: min=0.00  p5=1.20  median=4.06 mm (0.6% of samples < 0.8 mm)
+   wall thickness: min=0.01  p5=1.20  median=4.01 mm (0.6% of samples < 0.8 mm)
    downward-facing area (needs support if printed face-up): 12.1% of surface
    bed contact footprint: 41 verts within 0.5 mm of z_min (-128.6)

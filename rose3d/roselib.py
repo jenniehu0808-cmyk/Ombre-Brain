@@ -72,6 +72,9 @@ def thick_surface(P, thickness=1.2, bias=0.0):
     P = np.asarray(P, float)
     nu, nv, _ = P.shape
     N = grid_normals(P)
+    thickness = np.asarray(thickness, float)
+    if thickness.ndim == 2:            # per-vertex thickness (nu, nv)
+        thickness = thickness[..., None]
     top = P + N * thickness * (0.5 + 0.5 * bias)
     bot = P - N * thickness * (0.5 - 0.5 * bias)
     V = np.concatenate([top.reshape(-1, 3), bot.reshape(-1, 3)])
@@ -251,6 +254,19 @@ def export_safe(mesh, path):
     """Export so that what a slicer reads back is still watertight: quantise to float32
     (STL precision), merge vertices that collapse, drop degenerate faces, then write."""
     m = mesh.copy()
+    # vertices that would collapse onto each other at float32 (STL) precision create
+    # bow-tie edges after reload: nudge them apart along their normals first
+    q = m.vertices.astype(np.float32)
+    _, inv, counts = np.unique(q, axis=0, return_inverse=True, return_counts=True)
+    dup = np.where(counts[inv.ravel()] > 1)[0]
+    if len(dup):
+        vn = m.vertex_normals
+        groups = {}
+        for i in dup:
+            groups.setdefault(int(inv.ravel()[i]), []).append(i)
+        for g in groups.values():
+            for k, i in enumerate(g[1:], 1):
+                m.vertices[i] = m.vertices[i] + vn[i] * 0.004 * k
     m.vertices = m.vertices.astype(np.float32).astype(np.float64)
     m.merge_vertices()
     m.update_faces(m.nondegenerate_faces())

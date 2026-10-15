@@ -69,8 +69,8 @@ def petal_surface(theta0, *,
     lip_len = max(0.0, float(lip_len))
     L = L_body + lip_len
     if lip_len > 0:
-        nb = int(np.clip(round(nu * L_body / L), 6, nu - 4))
-        nl = nu - nb
+        nl = int(np.clip(round(nu * lip_len / L * 1.8) + 2, 5, nu - 8))   # a curled rim needs a few extra rows
+        nb = nu - nl
     else:
         nb, nl = nu, 0
     s_b = np.linspace(0.0, L_body, nb)
@@ -141,8 +141,13 @@ def petal_surface(theta0, *,
     return np.stack([r * np.cos(th), r * np.sin(th), z], -1)
 
 
-def petal(theta0, thickness=1.2, bias=0.0, **kw):
-    return rl.thick_surface(petal_surface(theta0, **kw), thickness, bias)
+def petal(theta0, thickness=1.2, bias=0.0, thick_rim=None, **kw):
+    """Solid petal. thick_rim: thickness at the rim (tapers linearly along the petal from `thickness`)."""
+    P = petal_surface(theta0, **kw)
+    if thick_rim is not None and thick_rim != thickness:
+        U = np.linspace(0.0, 1.0, P.shape[0])[:, None]
+        thickness = (thickness + (thick_rim - thickness) * rl.smoothstep(U)) * np.ones((1, P.shape[1]))
+    return rl.thick_surface(P, thickness, bias)
 
 
 # ----------------------------------------------------------------------------
@@ -227,35 +232,54 @@ COLORS = {'bud': 'cream', 'spiral': 'black', 'inner': 'cream', 'outer': 'cream',
 # petals (see logo.py), so the head reads as the logo from the top. A cream hexagonal
 # bud fills the centre, a cream floor + lowered lining petals show through the windows.
 # ----------------------------------------------------------------------------
-LOGO = dict(diameter=40.0, z_bottom=5.0, z_top=27.5, base_scale=0.58, belly=0.05, belly_at=0.72,
-            wave=2.5, wave_phase=None, fillet=1.4, rotate_deg=0.0, split=True, dz=(0.6, -0.4, 0.2, -0.6, 0.4, -0.2),
-            core_top_gap=1.5,      # cream hex bud top sits this far below the black top
-            window_gap=1.2,        # cream plugs in the six windows end this far below the black top
-            floor=[(0, 1.0), (12.0, 1.0), (12.8, 3.0), (12.3, 7.0), (0, 7.0)])
-# cream stack in logo mode: a garden-rose cup of three overlapping whorls around the black logo
+LOGO = dict(diameter=43.0, z_bottom=5.0, z_top=28.5, base_scale=0.58, belly=0.05, belly_at=0.62,
+            wave=3.4, wave_width=0.40, wave_phase=None, fillet=1.4, fillet_inset=0.6, rotate_deg=0.0, split=True,
+            dz=(0.25, -0.15, 0.1, -0.25, 0.15, -0.1),
+            core_top_gap=1.3,      # cream hex bud top sits this far below the black top
+            window_gap=0.8,        # cream plugs in the six windows end this far below the black top
+            dimple=1.0,            # height of the small cone on the hex bud
+            floor=[(0, 1.0), (12.5, 1.0), (13.4, 4.0), (16.8, 12.0), (15.5, 14.0), (0, 14.0)])
+_TIP = 41.0   # angle (deg) of the logo's outer-loop tips (one of six); cream whorls are phased against it
+# cream stack in logo mode: a garden-rose cup of four overlapping whorls around the black logo.
+# Every petal is a cupped bowl: it leaves the hip almost horizontally, rounds up through a belly at
+# the widest radius, stands nearly vertical and then curls back over itself at the rim (lip_turn);
+# thickness tapers from the base to a thin rim.
 LOGO_LAYERS = {
-    # 5 big reflexed guard petals: low, rolled back a lot
-    'outer': dict(n=5, phase=10, thickness=1.3, params=dict(
-        r_base=5.5, z_base=-7.5, r_top=27.0, z_top=19.0, ctrl=[(14.0, -3.0), (23.0, 8.0)],
-        lip_len=5.0, lip_turn=115, lip_fade=0.3, lip_corner=0.6, span=112, w_base=0.75, w_tip=0.85, u_max=0.5,
-        spiral=0.12, spiral_u=2.5, cup_r=3.5, cup_z=1.5, cup_tip=0.5, ripple_n=2.0, ripple_amp=1.4, side_ripple=0.3,
-        skew=8, roll=0.0, edge_drop=3.5, tip_round=0.5, apex=1.5, crease=1.5),
-        vary={'z_top': [20.5, 17.5, 19.5, 18.0, 19.0], 'r_top': [27.0, 27.8, 26.4, 27.4, 26.8], 'lean': [0, 3, 1, 4, 2]}),
-    # 5 upright cupped petals between them, rims just outside the black whorl
-    'mid': dict(n=5, phase=46, thickness=1.3, params=dict(
-        r_base=5.0, z_base=-5.0, r_top=23.0, z_top=26.0, ctrl=[(12.0, -1.5), (20.5, 12.0)],
-        lip_len=3.0, lip_turn=80, lip_fade=0.35, lip_corner=0.6, span=100, w_base=0.7, w_tip=0.85, u_max=0.5,
-        spiral=0.10, spiral_u=2.5, cup_r=3.0, cup_z=1.0, cup_tip=0.5, ripple_n=2.0, ripple_amp=1.1, side_ripple=0.3,
-        skew=10, roll=0.0, edge_drop=2.5, tip_round=0.4, apex=1.2, crease=1.2),
-        vary={'z_top': [27.0, 25.0, 26.5, 24.5, 26.0], 'r_top': [23.0, 23.8, 22.4, 23.4, 22.8], 'lean': [1, 0, 2, 0, 1]}),
-    # 5 tighter petals hugging the black whorl (tops level with its rim)
-    'inner2': dict(n=5, phase=82, thickness=1.25, params=dict(
-        r_base=4.5, z_base=-2.0, r_top=21.0, z_top=27.5, ctrl=[(10.0, 1.0), (18.5, 15.0)],
-        lip_len=2.2, lip_turn=60, lip_fade=0.4, lip_corner=0.6, span=92, w_base=0.7, w_tip=0.85, u_max=0.5,
-        spiral=0.08, spiral_u=2.5, cup_r=2.5, cup_z=0.5, cup_tip=0.6, ripple_n=1.5, ripple_amp=0.7, side_ripple=0.2,
-        skew=12, roll=0.0, edge_drop=2.0, tip_round=0.3, apex=0.8, crease=1.0),
-        vary={'z_top': [28.0, 26.5, 27.5, 26.0, 27.0], 'r_top': [21.0, 21.6, 20.6, 21.4, 20.8], 'lean': [0, 1, 0, 2, 1]}),
-    'sepals': copy.deepcopy(LAYERS['sepals']),
+    # 5 big guard petals: leave the hip steeply, belly r~26 at z~5, rim reflexed back in a broad ~5 mm curl
+    'outer': dict(n=5, phase=10, thickness=1.3, thick_rim=1.05, params=dict(
+        r_base=5.5, z_base=-7.5, r_top=24.5, z_top=13.0, ctrl=[(11.0, -6.5), (26.0, 2.5)],
+        lip_len=9.5, lip_turn=110, lip_fade=0.4, lip_corner=0.45, span=98, w_base=0.45, w_tip=0.8, u_max=0.7,
+        spiral=0.08, spiral_u=2.5, cup_r=3.0, cup_z=1.8, cup_tip=0.4, ripple_n=2.5, ripple_amp=1.6, side_ripple=0.3,
+        skew=8, roll=0.0, edge_drop=3.0, tip_round=0.3, apex=1.2, crease=1.5),
+        vary={'z_top': [14.0, 11.0, 13.5, 10.5, 12.5], 'r_top': [24.5, 25.0, 24.0, 24.8, 24.2], 'lean': [1, 1, 1, 2, 1]}),
+    # 5 cupped petals between them, belly r~24 at z~8, rims reflexed above the guards
+    'mid': dict(n=5, phase=46, thickness=1.25, thick_rim=1.05, params=dict(
+        r_base=5.0, z_base=-5.0, r_top=23.0, z_top=20.0, ctrl=[(12.0, -4.5), (24.5, 7.0)],
+        lip_len=7.0, lip_turn=95, lip_fade=0.4, lip_corner=0.45, span=90, w_base=0.5, w_tip=0.78, u_max=0.7,
+        spiral=0.08, spiral_u=2.5, cup_r=3.0, cup_z=1.5, cup_tip=0.45, ripple_n=2.5, ripple_amp=1.2, side_ripple=0.3,
+        skew=10, roll=0.0, edge_drop=2.5, tip_round=0.25, apex=1.0, crease=1.2),
+        vary={'z_top': [21.0, 18.5, 20.5, 18.0, 19.5], 'r_top': [23.0, 23.5, 22.6, 23.3, 22.8], 'lean': [1, 0, 1, 0, 1]}),
+    # 6 tighter upright petals centred on the dips between the black arms, softly rolled
+    'inner2': dict(n=6, phase=11, thickness=1.2, thick_rim=1.05, params=dict(
+        r_base=4.5, z_base=-1.0, r_top=22.0, z_top=22.5, ctrl=[(12.0, -1.0), (23.5, 9.0)],
+        lip_len=5.5, lip_turn=80, lip_fade=0.4, lip_corner=0.45, span=78, w_base=0.55, w_tip=0.78, u_max=0.7,
+        spiral=0.04, spiral_u=2.5, cup_r=3.0, cup_z=1.0, cup_tip=0.55, ripple_n=1.5, ripple_amp=0.7, side_ripple=0.2,
+        skew=10, roll=0.0, edge_drop=2.0, tip_round=0.15, apex=0.8, crease=1.0),
+        vary={'z_top': [23.5, 22.0, 23.0, 21.5, 23.3, 22.3], 'r_top': [22.0, 22.5, 21.7, 22.3, 21.9, 22.2], 'lean': [0, 1, 0, 1, 1, 0]}),
+    # 6 innermost cream petals, each wrapped around one black lobe (centred on the arms), cupping follows the logo outline
+    'inner3': dict(n=6, phase=41, thickness=1.2, thick_rim=1.05, params=dict(
+        r_base=5.0, z_base=2.0, r_top=22.5, z_top=27.0, ctrl=[(13.0, 2.0), (23.0, 15.0)],
+        lip_len=4.0, lip_turn=60, lip_fade=0.45, lip_corner=0.45, span=68, w_base=0.6, w_tip=0.78, u_max=0.7,
+        spiral=0.03, spiral_u=2.5, cup_r=2.5, cup_z=0.8, cup_tip=0.6, ripple_n=1.5, ripple_amp=0.5, side_ripple=0.2,
+        skew=10, roll=0.0, edge_drop=1.5, tip_round=0.1, apex=0.6, crease=0.8),
+        vary={'z_top': [27.5, 26.0, 27.0, 25.5, 27.3, 26.3], 'r_top': [22.5, 22.9, 22.3, 22.8, 22.4, 22.7], 'lean': [0, 1, 0, 1, 0, 1]}),
+    # calyx: 5 short cupped sepals tucked under the guard petals (tips just showing from below)
+    'sepals': dict(n=5, phase=30, thickness=1.5, params=dict(
+        r_base=3.5, z_base=-9.8, r_top=15.0, z_top=-6.0, ctrl=[(7.0, -10.3), (11.5, -8.5)],
+        lip_len=0.0, lip_turn=0.0, span=34, w_base=0.6, w_tip=0.15, u_max=0.35,
+        spiral=0.0, cup_r=0.5, cup_z=1.0, cup_tip=0.4, ripple_n=1, ripple_amp=0.0,
+        skew=3, roll=0, tip_round=0.0),
+        vary={'z_top': [-6.0, -7.0, -5.5, -6.5, -5.8], 'r_top': [15.0, 14.2, 15.5, 14.6, 15.2]}),
 }
 LOGO_COLORS = {k: 'cream' for k in LOGO_LAYERS}
 
@@ -303,7 +327,7 @@ def build(res=1.0, union=True, parts_wanted=('head', 'stem'), R=30.0, layers=Non
                     kw[key] = amp[i % len(amp)]
                 else:
                     kw[key] = kw.get(key, 0.0) + amp * (np.cos(np.pi * i) if n % 2 == 0 else np.sin(2 * np.pi * i / n))
-            ms.append(petal(phase + 360.0 * i / n, t, nu=nu, nv=nv, **kw))
+            ms.append(petal(phase + 360.0 * i / n, t, nu=nu, nv=nv, thick_rim=L.get('thick_rim'), **kw))
         built[name] = ms
     if s != 1.0:
         for L in built.values():
@@ -324,30 +348,20 @@ def build(res=1.0, union=True, parts_wanted=('head', 'stem'), R=30.0, layers=Non
         lc = dict(logo_cfg)
         gap, floor_prof = lc.pop('core_top_gap', 2.5), lc.pop('floor', LOGO['floor'])
         wgap = lc.pop('window_gap', 2.0)
+        dimple_h = lc.pop('dimple', 1.0)
         whorl = logomod.logo_whorl(**lc)
         whorl.apply_scale(s)
         black.append(whorl)
-        # cream hexagonal bud filling the centre hole (slightly oversized; trimmed by the black later)
-        poly = logomod.logo_polygon(lc['diameter'], lc.get('rotate_deg', 0.0))
-        hole = min((Polygon(h) for h in poly.interiors), key=lambda p: abs(p.centroid.x) + abs(p.centroid.y))
-        hole = affinity.scale(hole, 1.08, 1.08, origin=(0, 0))
-        z0, z1 = lc['z_bottom'] - 1.0, lc['z_top'] - gap
-        hexcore = trimesh.creation.extrude_polygon(hole, z1 - z0)
-        hexcore.apply_translation([0, 0, z0])
-        rin = np.sqrt(hole.area / (2 * np.sqrt(3)))
-        dimple = trimesh.creation.cone(radius=rin * 0.95, height=1.2, sections=48)
+        # cream hexagonal bud in the centre hole and cream plugs in the six windows: lofts that follow
+        # the whorl's own scale profile (so they stay inside the walls down to the floor); the black is
+        # carved out of the cream afterwards, so the small overlap into the walls is harmless
+        hexcore, plugs = logomod.logo_fills(hex_gap=gap, window_gap=wgap, expand=0.4, **lc)
+        hole = logomod.logo_polygon(lc['diameter'], lc.get('rotate_deg', 0.0))
+        rin = np.sqrt(min(Polygon(h).area for h in hole.interiors) / (2 * np.sqrt(3)))
+        z1 = lc['z_top'] - gap
+        dimple = trimesh.creation.cone(radius=rin * 0.92, height=max(0.3, dimple_h), sections=48)
         dimple.apply_translation([0, 0, z1 - 0.05])
         floor = rl.revolve(floor_prof, n=int(72 * res))
-        plugs = []
-        for h in poly.interiors:   # cream plugs in the six windows (pale petals showing between the arms)
-            hp = Polygon(h)
-            if hp is hole or (abs(hp.centroid.x) + abs(hp.centroid.y)) < 1.0:
-                continue
-            hp = affinity.scale(hp, 1.12, 1.12, origin='centroid')
-            pz0, pz1 = lc['z_bottom'] - 1.0, lc['z_top'] - wgap
-            pm = trimesh.creation.extrude_polygon(hp, pz1 - pz0)
-            pm.apply_translation([0, 0, pz0])
-            plugs.append(pm)
         for m_ in [hexcore, dimple, floor] + plugs:
             m_.apply_scale(s)
         cream += [hexcore, dimple, floor] + plugs
