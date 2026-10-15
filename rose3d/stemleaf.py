@@ -8,7 +8,7 @@ import numpy as np
 import trimesh
 import roselib as rl
 
-STEM = dict(length=118.0, radius=2.5, taper=0.12, ridges=14, ridge_amp=0.06, leaf_at=0.47,
+STEM = dict(z_top=-9.0, length=118.0, radius=2.5, taper=0.12, ridges=14, ridge_amp=0.06, leaf_at=0.47,
             leaf_len=38.0, leaf_w=17.0, leaf_yaw=-50, leaf_pitch=18, veins=4)
 
 
@@ -32,7 +32,7 @@ def build_stem_leaf(res=1.0, s=1.0, union=True, cfg=None):
     c = dict(STEM); c.update(cfg or {})
     n = int(90 * res)
     t = np.linspace(0, 1, n)
-    z = -9 * s - c['length'] * s * t
+    z = c['z_top'] * s - c['length'] * s * t
     x = 4.0 * s * np.sin(np.pi * t) ** 2 * (1 - t) - 1.5 * s * t
     y = -2.5 * s * np.sin(np.pi * t * 0.9) * t
     path = np.stack([x, y, z], 1)

@@ -1,11 +1,13 @@
 """rose.py — procedural, 3D-printable replica of the reference rose.
 
 Layers (inside -> outside), all anchored into a solid receptacle:
-  bud     : 6 tightly wrapped upright petals -> hexagonal centre opening   (cream)
-  spiral  : 6 wide, imbricate petals with rolled-back rims = dark pinwheel (black)
-  inner   : 5 cupped cream petals behind the dark whorl                    (cream)
-  outer   : 5 broad, rippled, flared cream petals                          (cream)
-  sepals  : 5 narrow sepals under the head                                 (cream)
+  bud     : 6 flat trapezoid panels tilted inward -> closed ~10 mm hexagonal cup
+            over a domed core (CORE)                                        (cream)
+  inner   : 6 cupped pale lining petals, 30 deg out of phase with the black (cream)
+  spiral  : 6 long imbricate ribbons, tulip body + tapered rim roll
+            -> camera-iris of slim crescents from above                     (black)
+  outer   : 5 broad cupped shields, bases sunk into the hip, rolled wavy rims (cream)
+  sepals  : 5 flush sepals under the head (calyx)                           (cream)
   stem + leaf (separate part with a peg; the head has a matching socket) and
   a one-piece 'full' union.
 
@@ -26,58 +28,115 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # ----------------------------------------------------------------------------
 def petal_surface(theta0, *,
                   r_base=4.0, z_base=0.0,          # where the petal leaves the receptacle
-                  r_top=20.0, z_top=25.0,          # where the (un-curled) centreline ends
-                  rise=0.6, bulge=0.15,            # centreline shape: fraction of the way up it
-                                                   # goes before heading out, and outward bulge
-                  p1=None, p2=None,                # explicit Bezier control points as (r_frac, z_frac)
-                                                   # of (r_top-r_base, z_top-z_base); override rise/bulge
-                  curl_out=6.0, curl_down=5.0,     # rim roll-back: extra (r,+) and (z,-) at the tip
-                  curl_fade=1.0,                   # 0: roll-back along the whole rim, 1: only the middle
+                  r_top=20.0, z_top=25.0,          # where the body centreline ends (the lip starts here)
+                  rise=0.6, bulge=0.15,            # body centreline shape (used when ctrl is None)
+                  ctrl=None,                       # explicit Bezier control points [(r1,z1),(r2,z2)]
+                  lip_len=0.0, lip_turn=0.0,       # rim: a circular arc of this length (mm) that bends the end
+                                                   # tangent outward/down by lip_turn deg (90 = horizontal, >90 droops)
+                  lip_fade=0.5, lip_center=0.0,    # lateral taper of the bend: corners turn (1-lip_fade) as much;
+                                                   # lip_center shifts the fat part toward the +v (>0) or -v edge
+                  lip_taper=0.0,                   # lip LENGTH shrinks to (1-lip_taper) at the -v edge (>0) or +v edge (<0)
+                  lip_corner=0.0,                  # lip LENGTH shrinks to (1-lip_corner) at both lateral edges (soft corners)
+                  apex=0.0,                        # soft pointed apex: rim centre pushed out by this many mm
                   span=100.0,                      # total angular width at the widest point (deg)
                   w_base=0.35, w_tip=0.7, u_max=0.6,  # width profile (relative to widest)
-                  spiral=0.0,                      # r *= 1 + spiral*v : one edge in, other out
+                  spiral=0.0, spiral_u=1.5,        # r *= 1 + spiral*v : one edge in, other out (imbricate pinwheel)
+                  spiral_asym=0.0,                 # 0..1: the +v (outer) edge moves out only (1-spiral_asym) as far
                   cup_r=4.0, cup_z=2.0, cup_tip=0.5,  # edges toward axis / raised; fraction kept at tip
+                  cup_asym=0.0,                    # 0..1: the +v (outer/head) edge is cupped only (1-cup_asym) as much
                   ripple_n=2.0, ripple_amp=1.0, ripple_phase=0.0, side_ripple=0.0,
                   skew=0.0,                        # sideways lean of the tip (deg)
                   roll=0.0,                        # +v edge up / -v edge down (mm)
                   tip_round=0.3,
+                  edge_drop=0.0,                   # rim corners droop by this many mm
+                  lean=0.0,                        # whole petal tilted outward about its base (deg)
+                  crease=0.0,                      # shallow fold along the centre line (mm inward)
                   nu=48, nv=40):
-    u = np.linspace(0.0, 1.0, nu)
     v = np.linspace(-1.0, 1.0, nv)
+    # ---- body centreline: cubic Bezier in the (r,z) plane, resampled by arc length
+    dr, dz = r_top - r_base, z_top - z_base
+    if ctrl is None:
+        p1 = (r_base + 0.05 * dr, z_base + rise * dz)
+        p2 = (r_base + (0.55 + bulge) * dr, z_base + 1.02 * dz)
+    else:
+        p1, p2 = (float(ctrl[0][0]), float(ctrl[0][1])), (float(ctrl[1][0]), float(ctrl[1][1]))
+    Cb = [(r_base, z_base), p1, p2, (r_top, z_top)]
+    tt = np.linspace(0.0, 1.0, 400)
+    B = rl.bezier(Cb, tt)
+    seg = np.linalg.norm(np.diff(B, axis=0), axis=1)
+    cum = np.concatenate([[0.0], np.cumsum(seg)])
+    L_body = float(cum[-1])
+    lip_len = max(0.0, float(lip_len))
+    L = L_body + lip_len
+    if lip_len > 0:
+        nb = int(np.clip(round(nu * L_body / L), 6, nu - 4))
+        nl = nu - nb
+    else:
+        nb, nl = nu, 0
+    s_b = np.linspace(0.0, L_body, nb)
+    t_b = np.interp(s_b, cum, tt)
+    Pb = rl.bezier(Cb, t_b)                       # (nb, 2)
+    rc = np.repeat(Pb[:, 0][:, None], nv, axis=1)
+    zc = np.repeat(Pb[:, 1][:, None], nv, axis=1)
+    s_all = s_b
+    if nl > 0:
+        e0, e1 = rl.bezier(Cb, [0.995, 1.0])
+        phi_end = np.arctan2(e1[1] - e0[1], e1[0] - e0[0])     # end tangent angle in the (r,z) plane
+        Vf = (v - lip_center) / (1.0 + abs(lip_center))
+        fade = np.clip(1.0 - float(lip_fade) * Vf ** 2, 0.0, 1.0)
+        turn = np.radians(lip_turn) * fade                      # (nv,) total bend per lateral position
+        lt = float(lip_taper)
+        len_v = lip_len * (1.0 - abs(lt) * 0.5 * (1.0 - np.sign(lt) * v)) if lt else np.full(nv, lip_len)
+        len_v = len_v * (1.0 - float(lip_corner) * v ** 2)
+        len_v = np.maximum(len_v, 0.08 * lip_len)               # (nv,) arc length per lateral position
+        f_l = np.linspace(0.0, 1.0, nl + 1)[1:]                 # (nl,) fraction along the lip
+        S_ = f_l[:, None] * len_v[None, :]                      # (nl, nv)
+        T_ = np.repeat(turn[None, :], nl, axis=0)
+        k = T_ / len_v[None, :]
+        small = np.abs(T_) < 1e-4
+        kk = np.where(small, 1.0, k)
+        r_arc = e1[0] + (np.sin(phi_end) - np.sin(phi_end - kk * S_)) / kk
+        z_arc = e1[1] + (np.cos(phi_end - kk * S_) - np.cos(phi_end)) / kk
+        r_str = e1[0] + S_ * np.cos(phi_end)
+        z_str = e1[1] + S_ * np.sin(phi_end)
+        rc = np.concatenate([rc, np.where(small, r_str, r_arc)], axis=0)
+        zc = np.concatenate([zc, np.where(small, z_str, z_arc)], axis=0)
+        s_all = np.concatenate([s_b, L_body + f_l * lip_len])
+    u = s_all / L
     U, V = np.meshgrid(u, v, indexing='ij')
     lin = w_base + (w_tip - w_base) * U
     w = lin + (1.0 - lin) * rl.bump(U, u_max, k=2.0)
-    # centreline: straight (no roll-back) and curled versions, blended laterally
-    dr, dz = r_top - r_base, z_top - z_base
-    p1 = p1 or (0.05, rise)
-    p2 = p2 or (0.55 + bulge, 1.02)
-    c_straight = [(r_base, z_base),
-                  (r_base + p1[0] * dr, z_base + p1[1] * dz),
-                  (r_base + p2[0] * dr, z_base + p2[1] * dz),
-                  (r_top, z_top)]
-    c_curled = [(r_base, z_base),
-                (r_base + p1[0] * dr, z_base + p1[1] * dz),
-                (r_base + p2[0] * dr, z_base + p2[1] * dz + 0.35 * curl_down),
-                (r_top + curl_out, z_top - curl_down)]
-    S = rl.bezier(c_straight, u)
-    C = rl.bezier(c_curled, u)
-    fade = (1.0 - V ** 2) ** (0.0001 + 1.5 * curl_fade) if curl_fade > 0 else np.ones_like(V)
-    rc = S[:, 0][:, None] + fade * (C[:, 0] - S[:, 0])[:, None]
-    zc = S[:, 1][:, None] + fade * (C[:, 1] - S[:, 1])[:, None]
     # cupping
     c = w * (1.0 - (1.0 - cup_tip) * rl.smoothstep((U - 0.5) / 0.5))
-    r = rc - cup_r * V ** 2 * c
-    z = zc + cup_z * V ** 2 * c
+    V2 = V ** 2 * (1.0 - cup_asym * 0.5 * (V + np.abs(V)))     # = V^2 for v<0, V^2 (1 - asym V) for v>0
+    r = rc - cup_r * V2 * c
+    z = zc + cup_z * V2 * c
+    # shallow fold along the centre line
+    if crease:
+        r = r - crease * np.exp(-(V / 0.45) ** 2) * rl.smoothstep(U * 2.0)
     # imbricate spiral: one lateral edge sits further in, the other further out
-    r = r * (1.0 + spiral * V * np.clip(U * 1.5, 0, 1))
+    fV = V - spiral_asym * 0.5 * (V + np.abs(V)) * V          # = V for v<0, V - asym*V^2 for v>0 (C1 at 0)
+    r = r * (1.0 + spiral * fV * rl.smoothstep(U * spiral_u))
     # roll
     z = z + roll * V * U
+    # drooping rim corners
+    if edge_drop:
+        z = z - edge_drop * V ** 2 * U ** 3
     # ripples
     z = z + ripple_amp * np.sin(ripple_n * np.pi * V + ripple_phase) * U ** 3
     if side_ripple:
         z = z + side_ripple * np.sin(3.0 * np.pi * U + ripple_phase) * np.abs(V) ** 5
     # rounded tip corners
     r = r - tip_round * 0.5 * dr * (V ** 4) * (U ** 4)
+    # soft pointed apex in the middle of the rim
+    if apex:
+        r = r + apex * np.exp(-(V / 0.45) ** 2) * U ** 6
+    # whole-petal outward lean about the base point
+    if lean:
+        a = np.radians(lean)
+        rr, zz = r - r_base, z - z_base
+        r = r_base + rr * np.cos(a) + zz * np.sin(a)
+        z = z_base - rr * np.sin(a) + zz * np.cos(a)
     th = (theta0 + skew * U) * D2R + V * 0.5 * span * D2R * w
     return np.stack([r * np.cos(th), r * np.sin(th), z], -1)
 
@@ -85,72 +144,6 @@ def petal_surface(theta0, *,
 def petal(theta0, thickness=1.2, bias=0.0, **kw):
     return rl.thick_surface(petal_surface(theta0, **kw), thickness, bias)
 
-
-
-
-# ----------------------------------------------------------------------------
-# spiral ribbon core: one continuous sheet wound around the axis, 6 petal lobes
-# per turn. Adjacent turns are separated radially, so nothing self-intersects.
-# ----------------------------------------------------------------------------
-def ribbon_surface(t0, t1, *, lobes=6, r_rim=(3.5, 2.5, 0.8), z_rim=(30.0, -1.0), r_bot=(3.0, 0.5), z_bot=(8.0, -2.0),
-                   lobe_r=0.25, lobe_z=3.0, drop=0.15, lean=(0.3, 1.5), lean_at=0.65, lean_down=0.6, lobe_phase=0.0,
-                   p1=(0.15, 0.5), p2=(0.6, 1.0), cup=0.0, twist=0.0, mod_pow=1.5, poly=0.0, spt=240, ns=30):
-    """Ribbon section for turns t0..t1 (1 turn = 360 deg) with `lobes` sawtooth petals per turn.
-
-    Within each lobe (f = 0..1 along it) the rim radius and height ramp UP, then drop back over
-    the last `drop` fraction: that drop is where the next petal starts, tucked under this one.
-    r_rim = (a, b, c): turn radius a + b*tau + c*tau^2, modulated by (1 + lobe_r*(ramp-0.5))
-    z_rim = (a, b): a + b*tau, modulated by lobe_z*(ramp-0.5)
-    r_bot, z_bot: anchor curve inside the receptacle (linear in tau)
-    lean = (a, b): outward lean of the rim (mm) = a + b*tau, peaking at f=lean_at and 0 at
-    the lobe ends -> tapered crescent; lean_down: how far the leaning rim drops (fraction)
-    lobe_phase: shift of the lobes in lobe units (use 0.5 on alternate turns for a pinwheel)
-    mod_pow: the lobe modulation is scaled by s**mod_pow so the base stays smooth
-    """
-    nt = max(8, int(spt * (t1 - t0)))
-    tau = np.linspace(t0, t1, nt)
-    sv = np.linspace(0.0, 1.0, ns)
-    T, S = np.meshgrid(tau, sv, indexing='ij')
-    th = T * 2 * np.pi
-    f = np.mod(lobes * T + lobe_phase, 1.0)
-    up = f / (1.0 - drop)
-    down = 1.0 - (f - (1.0 - drop)) / drop
-    ramp = np.where(f < 1.0 - drop, up, rl.smoothstep(down))
-    ramp = np.where(f < 1.0 - drop, rl.smoothstep(up) * 0.3 + up * 0.7, ramp)
-    bumpf = rl.bump(np.clip(f / (1.0 - drop), 1e-4, 1 - 1e-4), lean_at, k=2.0)
-    bumpf = np.where(f < 1.0 - drop, bumpf, 0.0)
-    w = S ** mod_pow
-    rr = (r_rim[0] + r_rim[1] * T + r_rim[2] * T ** 2) * (1.0 + lobe_r * (ramp - 0.5) * w)
-    # poly: pull the rim toward a regular polygon with `lobes` straight sides (1 = full polygon)
-    pf = np.cos(np.pi / lobes) / np.cos(np.pi / lobes * (2.0 * np.clip(f / (1.0 - drop), 0, 1) - 1.0))
-    rr = rr * (1.0 + poly * (pf - 1.0) * w)
-    zr = z_rim[0] + z_rim[1] * T + lobe_z * (ramp - 0.5) * w
-    rb = r_bot[0] + r_bot[1] * T
-    zb = z_bot[0] + z_bot[1] * T
-    dr, dz = rr - rb, zr - zb
-    P1r, P1z = rb + p1[0] * dr, zb + p1[1] * dz
-    P2r, P2z = rb + p2[0] * dr, zb + p2[1] * dz
-    om = 1 - S
-    r = om ** 3 * rb + 3 * om ** 2 * S * P1r + 3 * om * S ** 2 * P2r + S ** 3 * rr
-    z = om ** 3 * zb + 3 * om ** 2 * S * P1z + 3 * om * S ** 2 * P2z + S ** 3 * zr
-    L = (lean[0] + lean[1] * T) * bumpf * S ** 4
-    r = r + L
-    z = z - lean_down * L
-    r = r - cup * (1.0 - bumpf) * S ** 2
-    thp = th + np.radians(twist) * S
-    return np.stack([r * np.cos(thp), r * np.sin(thp), z], -1)
-
-
-RIBBON = dict(
-    sections=[  # (name, t0, t1, thickness, colour, lobe_phase)
-        ('bud', 0.0, 1.0, 1.5, 'cream', 0.0),
-        ('inner', 1.0, 2.0, 1.4, 'cream', 0.5),
-        ('spiral', 2.0, 3.0, 1.5, 'black', 0.0),
-    ],
-    params=dict(lobes=6, r_rim=(3.5, 2.5, 0.8), z_rim=(30.0, -0.8), r_bot=(3.0, 0.5), z_bot=(8.0, -2.0),
-                lobe_r=0.25, lobe_z=3.0, drop=0.15, lean=(0.2, 1.6), lean_at=0.65, lean_down=0.6,
-                p1=(0.15, 0.5), p2=(0.6, 1.0), cup=0.3, twist=0.0, mod_pow=1.5),
-)
 
 # ----------------------------------------------------------------------------
 # leaf
@@ -173,33 +166,58 @@ def leaf_surface(length=34.0, width=15.0, fold=2.0, droop=4.0, ripple=0.7, serr=
 # default parameters (R = 30 mm head radius). Edit here or override via --params.
 # ----------------------------------------------------------------------------
 LAYERS = {
-    'bud': dict(n=6, phase=50, thickness=1.1, params=dict(
-        r_base=2.6, z_base=4.0, r_top=5.2, z_top=28.0, rise=0.7, bulge=0.05,
-        curl_out=0.0, curl_down=0.0, curl_fade=0.0, span=130, w_base=0.5, w_tip=0.85, u_max=0.55,
-        spiral=0.22, cup_r=0.6, cup_z=0.0, cup_tip=1.0, ripple_n=1, ripple_amp=0.0,
-        skew=25, roll=1.5, tip_round=0.15)),
-    'spiral': dict(n=6, phase=20, thickness=1.4, params=dict(
-        r_base=4.0, z_base=3.0, r_top=12.5, z_top=29.0, rise=0.75, bulge=0.1,
-        curl_out=5.5, curl_down=5.0, curl_fade=0.8, span=125, w_base=0.4, w_tip=0.9, u_max=0.55,
-        spiral=0.2, cup_r=2.5, cup_z=0.5, cup_tip=0.7, ripple_n=1, ripple_amp=0.3,
-        skew=30, roll=3.0, tip_round=0.1)),
-    'inner': dict(n=5, phase=46, thickness=1.2, params=dict(
-        r_base=5.0, z_base=2.0, r_top=20.0, z_top=28.0, rise=0.7, bulge=0.15,
-        curl_out=3.0, curl_down=3.0, curl_fade=0.6, span=105, w_base=0.35, w_tip=0.75, u_max=0.6,
-        spiral=0.12, cup_r=4.0, cup_z=2.5, cup_tip=0.5, ripple_n=1.5, ripple_amp=1.0,
-        skew=15, roll=2.0, tip_round=0.3)),
-    'outer': dict(n=5, phase=10, thickness=1.3, params=dict(
-        r_base=6.0, z_base=0.5, r_top=27.0, z_top=24.0, rise=0.65, bulge=0.2,
-        curl_out=5.0, curl_down=7.0, curl_fade=0.4, span=100, w_base=0.3, w_tip=0.7, u_max=0.65,
-        spiral=0.06, cup_r=5.0, cup_z=4.0, cup_tip=0.2, ripple_n=2.5, ripple_amp=1.8, side_ripple=0.8,
-        skew=6, roll=1.0, tip_round=0.35)),
-    'sepals': dict(n=5, phase=30, thickness=1.2, params=dict(
-        r_base=5.0, z_base=-4.0, r_top=22.0, z_top=2.0, rise=0.3, bulge=0.1,
-        curl_out=2.0, curl_down=4.0, curl_fade=0.0, span=22, w_base=0.6, w_tip=0.1, u_max=0.35,
-        spiral=0.0, cup_r=1.0, cup_z=1.0, cup_tip=0.3, ripple_n=1, ripple_amp=0.0,
+    # centre: closed faceted hexagonal bud ~11 mm across: six flat trapezoid panels tilted ~12 deg inward so
+    # their top chords nearly meet (adjacent edges touching); the domed CORE fills the opening to ~0.5 mm
+    # under the panel rims (no open hex nut, no visible post)
+    'bud': dict(n=6, phase=50, thickness=1.2, params=dict(
+        r_base=5.7, z_base=19.0, r_top=3.5, z_top=29.0, ctrl=[(5.4, 22.0), (4.1, 26.5)],
+        lip_len=0.0, lip_turn=0.0, span=66, w_base=0.85, w_tip=1.0, u_max=0.6,
+        spiral=0.03, cup_r=-0.5, cup_z=0.0, cup_tip=1.0, ripple_n=1, ripple_amp=0.0,
+        skew=4, roll=0.0, edge_drop=0.0, tip_round=0.0)),
+    # cream lining: 6 cupped pale petals 30 deg out of phase with the black blades, nested just inside them
+    # with rims ~2.5 mm under the black rims and flaring out, so a broad cream face fills every gap
+    # between the crescents from above and from the side
+    'inner': dict(n=6, phase=50, thickness=1.2,
+        vary={'z_top': [28.0, 26.5, 27.5, 26.0, 27.0, 26.5]},
+        params=dict(
+        r_base=4.0, z_base=2.0, r_top=12.0, z_top=27.0, ctrl=[(8.0, 5.0), (11.0, 17.0)],
+        lip_len=2.2, lip_turn=60, lip_fade=0.4, span=100, w_base=0.5, w_tip=0.85, u_max=0.6,
+        spiral=0.15, cup_r=2.0, cup_z=0.0, cup_tip=0.7, ripple_n=1, ripple_amp=0.2,
+        skew=15, roll=0.0, edge_drop=2.0, tip_round=0.15)),
+    # black whorl: 6 long imbricate blades (span 125, tail pulled in 50 %, head pushed out 30 %) -> a
+    # camera-iris of crescents from above. Cupped tulip body: base r 7 at z 2, belly r~15.3 at z~18, easing
+    # back to r 13 at z 29, then a short soft rim roll (widest near the head, tapering to a point at the tail);
+    # strongly cupped with dropped corners so each blade reads as one rounded cup from the side.
+    'spiral': dict(n=6, phase=20, thickness=1.4,
+        vary={'z_top': [30.5, 29.0, 30.0, 28.5, 29.5, 29.0], 'lean': [2, 3, 2, 3, 2, 3]},
+        params=dict(
+        r_base=7.0, z_base=2.0, r_top=14.2, z_top=29.0, ctrl=[(14.5, 4.0), (18.5, 18.0)],
+        lip_len=3.0, lip_turn=75, lip_fade=1.0, lip_center=0.2, lip_taper=0.85,
+        span=125, w_base=0.5, w_tip=0.92, u_max=0.6,
+        spiral=0.5, spiral_asym=0.35, spiral_u=1.5, cup_r=3.5, cup_asym=0.75, cup_z=0.0, cup_tip=0.7, ripple_n=1, ripple_amp=0.2,
+        skew=20, roll=0.0, edge_drop=6.0, tip_round=0.2)),
+    # outer: 5 broad cupped shields; bases sunk into the hip, rounded belly wall with a shallow midrib fold,
+    # thin rolled rim with 2-3 long undulations, soft rounded corners and a soft apex; r_top / z_top / lean vary
+    'outer': dict(n=5, phase=10, thickness=1.3,
+        vary={'z_top': [24.5, 20.5, 23.5, 19.5, 22.5], 'r_top': [25.6, 26.4, 27.0, 25.6, 27.0], 'lean': [0, 2, 1, 3, 1]},
+        params=dict(
+        r_base=5.5, z_base=-7.5, r_top=24.5, z_top=22.0, ctrl=[(14.0, -3.0), (21.5, 11.0)],
+        lip_len=3.0, lip_turn=85, lip_fade=0.3, lip_corner=0.6, span=112, w_base=0.75, w_tip=0.8, u_max=0.5,
+        spiral=0.12, spiral_u=2.5, cup_r=3.5, cup_z=1.5, cup_tip=0.5, ripple_n=2.5, ripple_amp=1.3, side_ripple=0.3,
+        skew=8, roll=0.0, edge_drop=3.0, tip_round=0.5, apex=1.5, crease=1.5)),
+    # calyx: 5 modest sepals hugging the underside of the outer petals, pointed tips curling slightly up
+    'sepals': dict(n=5, phase=30, thickness=1.5, params=dict(
+        r_base=3.5, z_base=-9.8, r_top=16.0, z_top=-0.8, ctrl=[(7.0, -9.7), (12.0, -4.5)],
+        lip_len=0.0, lip_turn=0.0, span=42, w_base=0.5, w_tip=0.1, u_max=0.4,
+        spiral=0.0, cup_r=0.0, cup_z=0.6, cup_tip=0.4, ripple_n=1, ripple_amp=0.0,
         skew=0, roll=0, tip_round=0.0)),
 }
-RECEPTACLE = [(0, -9), (3.5, -9), (6.5, -6), (8.3, -1.5), (8.4, 2.5), (7.0, 5.5), (4.5, 8.0), (0, 8.5)]
+BASE_Z = -10.5   # underside of the head (stem socket opens here)
+# smooth ogee hip hidden behind the petal bases, narrowing to the stem socket (no turned foot ring)
+RECEPTACLE = [(0, -10.5), (4.0, -10.5), (5.0, -9.6), (6.5, -8.0), (8.0, -6.0), (9.0, -3.0), (9.3, 0.5), (8.8, 4.0),
+              (7.5, 7.0), (5.5, 9.0), (0, 10)]
+# domed core inside the hexagonal centre bud; dome top ~0.5 mm under the panel rims
+CORE = [(0, 9.0), (4.5, 9.0), (4.2, 14.0), (4.2, 18.0), (5.0, 21.0), (4.4, 25.0), (3.6, 27.6), (2.2, 28.3), (0, 28.6)]
 STEM = dict(length=118.0, radius=2.5, taper=0.12, ridges=14, ridge_amp=0.06, leaf_at=0.47,
             leaf_len=34.0, leaf_w=15.0, leaf_yaw=-50, leaf_pitch=25)
 COLORS = {'bud': 'cream', 'spiral': 'black', 'inner': 'cream', 'outer': 'cream', 'sepals': 'cream'}
@@ -216,18 +234,20 @@ def deep_update(d, u):
 
 # ----------------------------------------------------------------------------
 def build(res=1.0, union=True, parts_wanted=('head', 'stem'), R=30.0, layers=None, stem_cfg=None,
-          receptacle_prof=None, colors=None, ribbon=None, verbose=True):
+          receptacle_prof=None, colors=None, verbose=True, core_prof=None):
     layers = layers or LAYERS
     stem_cfg = stem_cfg or STEM
     receptacle_prof = receptacle_prof or RECEPTACLE
+    core_prof = core_prof or CORE
     colors = colors or COLORS
     s = R / 30.0
     nu, nv = max(12, int(48 * res)), max(10, int(40 * res))
     P = {}
 
     receptacle = rl.revolve([(a * s, b * s) for a, b in receptacle_prof], n=int(72 * res))
-    socket = trimesh.creation.cylinder(radius=2.75 * s, height=8.0 * s, sections=48)
-    socket.apply_translation([0, 0, -9 * s + 3.5 * s])
+    core = rl.revolve([(a * s, b * s) for a, b in core_prof], n=int(60 * res))
+    socket = trimesh.creation.cylinder(radius=2.75 * s, height=7.6 * s, sections=48)   # 5.5 mm hole, 7 mm deep
+    socket.apply_translation([0, 0, BASE_Z * s + 3.2 * s])
 
     built = {}
     for name, L in layers.items():
@@ -236,13 +256,14 @@ def build(res=1.0, union=True, parts_wanted=('head', 'stem'), R=30.0, layers=Non
         for i in range(n):
             kw = dict(L['params'])
             kw['ripple_phase'] = kw.get('ripple_phase', 0.0) + 0.9 * i
+            # optional per-petal variation: explicit list (cycled) or +/- amplitude alternating around the whorl
+            for key, amp in L.get('vary', {}).items():
+                if isinstance(amp, (list, tuple)):
+                    kw[key] = amp[i % len(amp)]
+                else:
+                    kw[key] = kw.get(key, 0.0) + amp * (np.cos(np.pi * i) if n % 2 == 0 else np.sin(2 * np.pi * i / n))
             ms.append(petal(phase + 360.0 * i / n, t, nu=nu, nv=nv, **kw))
         built[name] = ms
-    if ribbon:
-        for name, t0, t1, th, col, ph in ribbon['sections']:
-            Pr = ribbon_surface(t0, t1, spt=int(240 * res), ns=max(10, int(30 * res)), lobe_phase=ph, **ribbon['params'])
-            built[name] = [rl.thick_surface(Pr, th)]
-            colors = dict(colors); colors[name] = col
     if s != 1.0:
         for L in built.values():
             for m in L:
@@ -250,9 +271,10 @@ def build(res=1.0, union=True, parts_wanted=('head', 'stem'), R=30.0, layers=Non
 
     if 'stem' in parts_wanted:
         import stemleaf
-        P['stem_leaf'] = stemleaf.build_stem_leaf(res=res, s=s, union=union, cfg=stem_cfg)
+        cfg = dict(stem_cfg); cfg['z_top'] = BASE_Z
+        P['stem_leaf'] = stemleaf.build_stem_leaf(res=res, s=s, union=union, cfg=cfg)
 
-    cream = [m for nme, ms in built.items() if colors.get(nme, 'cream') == 'cream' for m in ms] + [receptacle]
+    cream = [m for nme, ms in built.items() if colors.get(nme, 'cream') == 'cream' for m in ms] + [receptacle, core]
     black = [m for nme, ms in built.items() if colors.get(nme) == 'black' for m in ms]
     if union:
         if verbose: print('union: cream ...'); sys.stdout.flush()
@@ -294,10 +316,10 @@ def main(argv=None):
     ap.add_argument('--render', action='store_true')
     ap.add_argument('--views', default='top,side,iso,front')
     ap.add_argument('--prefix', default='rose')
-    ap.add_argument('--params', default=None, help='JSON file: {"layers": {...}, "stem": {...}, "receptacle": [...], "colors": {...}}')
+    ap.add_argument('--params', default=None, help='JSON file: {"layers": {...}, "stem": {...}, "receptacle": [...], "core": [...], "colors": {...}}')
     a = ap.parse_args(argv)
     os.makedirs(a.out, exist_ok=True)
-    layers, stem_cfg, rec, colors = copy.deepcopy(LAYERS), dict(STEM), list(RECEPTACLE), dict(COLORS)
+    layers, stem_cfg, rec, colors, core = copy.deepcopy(LAYERS), dict(STEM), list(RECEPTACLE), dict(COLORS), list(CORE)
     if a.params:
         ov = json.load(open(a.params))
         deep_update(layers, ov.get('layers', {}))
@@ -306,17 +328,10 @@ def main(argv=None):
                 del layers[k_]
         stem_cfg.update(ov.get('stem', {}))
         rec = ov.get('receptacle', rec)
+        core = ov.get('core', core)
         colors.update(ov.get('colors', {}))
-    ribbon = None
-    if a.params and 'ribbon' in ov:
-        ribbon = copy.deepcopy(RIBBON)
-        if ov['ribbon'] is not None:
-            if 'sections' in ov['ribbon']:
-                ribbon['sections'] = [tuple(x) for x in ov['ribbon']['sections']]
-            rp = ov['ribbon'].get('params', {})
-            ribbon['params'].update({k: (tuple(v) if isinstance(v, list) else v) for k, v in rp.items()})
     parts = build(res=a.res, union=not a.no_union, parts_wanted=('head', 'stem') if a.only == 'all' else ('head',),
-                  R=a.R, layers=layers, stem_cfg=stem_cfg, receptacle_prof=rec, colors=colors, ribbon=ribbon)
+                  R=a.R, layers=layers, stem_cfg=stem_cfg, receptacle_prof=rec, colors=colors, core_prof=core)
     for name, m in parts.items():
         if name.startswith('_'):
             continue
