@@ -247,6 +247,23 @@ def fill_voids(mesh, keep='all'):
     return trimesh.util.concatenate(pos)
 
 
+def export_safe(mesh, path):
+    """Export so that what a slicer reads back is still watertight: quantise to float32
+    (STL precision), merge vertices that collapse, drop degenerate faces, then write."""
+    m = mesh.copy()
+    m.vertices = m.vertices.astype(np.float32).astype(np.float64)
+    m.merge_vertices()
+    m.update_faces(m.nondegenerate_faces())
+    m.remove_unreferenced_vertices()
+    if not m.is_watertight:
+        try:
+            m.fill_holes()
+        except Exception:
+            pass
+    m.export(path)
+    return m
+
+
 def report(mesh, name='mesh'):
     bb = mesh.bounds
     size = bb[1] - bb[0]

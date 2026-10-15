@@ -320,8 +320,8 @@ def main(argv=None):
     for name, m in parts.items():
         if name.startswith('_'):
             continue
+        m = rl.export_safe(m, os.path.join(a.out, f'{a.prefix}_{name}.stl'))
         rl.report(m, name)
-        m.export(os.path.join(a.out, f'{a.prefix}_{name}.stl'))
     if a.render:
         cream = os.path.join(a.out, f'{a.prefix}_head_cream.stl') + ':#f1ebdc'
         black = [os.path.join(a.out, f'{a.prefix}_head_black.stl') + ':#141414'] if 'head_black' in parts else []

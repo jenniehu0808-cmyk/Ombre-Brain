@@ -19,7 +19,7 @@ def leaf_surface(length=34.0, width=15.0, fold=2.0, droop=4.0, ripple=0.6, serr=
     # serrated margin (teeth pointing toward the tip), only near the edge
     teeth = np.sin(26 * np.pi * U) ** 2 * (1 - U) ** 0.5 * (U > 0.08)
     w = w * (1 - serr * 0.07 * teeth * np.abs(V) ** 4)
-    w = np.maximum(w, 0.09 * (1 - U) + 0.015)
+    w = np.maximum(w, 0.09 * (1 - U) + 0.04)
     x = length * U
     y = 0.5 * width * V * w
     z = (fold * np.abs(V) * w - droop * U ** 2

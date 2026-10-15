@@ -10,10 +10,12 @@ def report(path):
     print(f'   faces={len(m.faces)}  bodies={m.body_count}  watertight={m.is_watertight}  winding={m.is_winding_consistent}')
     print(f'   size = {size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} mm   volume = {m.volume/1000:.1f} cm^3  (~{m.volume/1000*1.24:.0f} g PLA solid)')
     # wall thickness: cast rays inward from sampled surface points
-    pts, fid = m.sample(4000, return_index=True)
+    pts, fid = m.sample(1200, return_index=True)
     nrm = m.face_normals[fid]
     try:
-        th = trimesh.proximity.thickness(m, pts, exterior=False, normals=nrm, method='ray')
+        # chunked: the ray engine allocates per ray x candidate-triangle, keep batches small
+        th = np.concatenate([trimesh.proximity.thickness(m, pts[i:i + 100], exterior=False, normals=nrm[i:i + 100], method='ray')
+                             for i in range(0, len(pts), 100)])
         th = th[np.isfinite(th) & (th > 0)]
         print(f'   wall thickness: min={th.min():.2f}  p5={np.percentile(th,5):.2f}  median={np.median(th):.2f} mm '
               f'({(th<0.8).mean()*100:.1f}% of samples < 0.8 mm)')
