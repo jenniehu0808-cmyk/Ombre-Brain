@@ -295,7 +295,9 @@ def deep_update(d, u):
 
 # ----------------------------------------------------------------------------
 def build(res=1.0, union=True, parts_wanted=('head', 'stem'), R=30.0, layers=None, stem_cfg=None,
-          receptacle_prof=None, colors=None, verbose=True, core_prof=None, logo_cfg=None):
+          receptacle_prof=None, colors=None, verbose=True, core_prof=None, logo_cfg=None, tabletop=None):
+    """tabletop: cut height in mm (at R=30) — the head gets no stem socket and its bottom is sliced flat
+    this far above BASE_Z so it stands on a table by itself."""
     logo_active = logo_cfg is not None
     if logo_active and layers is None:
         layers = copy.deepcopy(LOGO_LAYERS)
@@ -374,11 +376,18 @@ def build(res=1.0, union=True, parts_wanted=('head', 'stem'), R=30.0, layers=Non
         head_black = rl.union_all(black) if black else None
         if verbose: print('union: head ...'); sys.stdout.flush()
         head = rl.union_all([head_cream] + ([head_black] if head_black is not None else []))
-        try:
-            head_s = trimesh.boolean.difference([head, socket], engine='manifold', check_volume=False)
-            head_cream_s = trimesh.boolean.difference([head_cream, socket], engine='manifold', check_volume=False)
-        except Exception as e:
-            print('socket difference failed:', e); head_s, head_cream_s = head, head_cream
+        if tabletop is not None:
+            zc = (BASE_Z + tabletop) * s
+            head_s = trimesh.intersections.slice_mesh_plane(head, [0, 0, 1], [0, 0, zc], cap=True)
+            head_cream_s = trimesh.intersections.slice_mesh_plane(head_cream, [0, 0, 1], [0, 0, zc], cap=True)
+            for m_ in (head_s, head_cream_s):
+                m_.merge_vertices(); m_.update_faces(m_.nondegenerate_faces()); m_.fix_normals()
+        else:
+            try:
+                head_s = trimesh.boolean.difference([head, socket], engine='manifold', check_volume=False)
+                head_cream_s = trimesh.boolean.difference([head_cream, socket], engine='manifold', check_volume=False)
+            except Exception as e:
+                print('socket difference failed:', e); head_s, head_cream_s = head, head_cream
         if head_black is not None:
             try:   # the two colour bodies must not overlap: carve the black out of the cream
                 head_cream_s = trimesh.boolean.difference([head_cream_s, head_black], engine='manifold', check_volume=False)
@@ -412,6 +421,9 @@ def main(argv=None):
     ap.add_argument('--render', action='store_true')
     ap.add_argument('--views', default='top,side,iso,front')
     ap.add_argument('--prefix', default='rose')
+    ap.add_argument('--tabletop', type=float, default=None, metavar='MM',
+                    help='stemless version: no socket, bottom sliced flat MM above the base (try 4)')
+    ap.add_argument('--wall', type=float, default=1.0, help='multiply every petal thickness (e.g. 0.72 with --R 45 keeps walls ~1.4 mm)')
     ap.add_argument('--no-logo', action='store_true', help='classic spiral whorl instead of the logo whorl')
     ap.add_argument('--params', default=None, help='JSON file: {"layers": {...}, "stem": {...}, "receptacle": [...], "core": [...], "colors": {...}}')
     a = ap.parse_args(argv)
@@ -432,8 +444,16 @@ def main(argv=None):
     logo_cfg = None if a.no_logo else copy.deepcopy(LOGO)
     if a.params and logo_cfg is not None and 'logo' in ov:
         logo_cfg.update(ov['logo'] or {})
+    if a.wall != 1.0:
+        for L in layers.values():
+            L['thickness'] = L['thickness'] * a.wall
+            if L.get('thick_rim'):
+                L['thick_rim'] = L['thick_rim'] * a.wall
+    if a.tabletop is not None:
+        a.only = 'head'
     parts = build(res=a.res, union=not a.no_union, parts_wanted=('head', 'stem') if a.only == 'all' else ('head',),
-                  R=a.R, layers=layers, stem_cfg=stem_cfg, receptacle_prof=rec, colors=colors, core_prof=core, logo_cfg=logo_cfg)
+                  R=a.R, layers=layers, stem_cfg=stem_cfg, receptacle_prof=rec, colors=colors, core_prof=core, logo_cfg=logo_cfg,
+                  tabletop=a.tabletop)
     for name, m in parts.items():
         if name.startswith('_'):
             continue

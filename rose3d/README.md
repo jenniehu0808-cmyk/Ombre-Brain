@@ -24,6 +24,7 @@ Head: 59 × 60 × 43 mm. With stem: 161 mm tall. Petals 1.2–1.5 mm thick.
 | `rose_viewer.html` | interactive 3D viewer (open in any browser) |
 | `rose_head_*.png`, `rose_side.png`, `compare.png` | preview renders and the comparison sheet against the reference |
 | `print_report.txt` | watertightness, wall-thickness and overhang report |
+| `tabletop90/` | stemless 90 mm rose that stands on a table (`--R 45 --wall 0.72 --tabletop 4`), sized to match a 91 mm peony; 2-colour 3MF + STLs |
 | `classic/` | the earlier six-crescent whorl version (`python3 rose.py --no-logo`); 2-colour 3MF + previews |
 
 ## Printing
@@ -51,6 +52,7 @@ python3 rose.py --render                           # full-resolution build + pre
 python3 rose.py --R 40                             # bigger rose (80 mm head); everything scales
 python3 rose.py --params my.json                   # override LOGO / layers / STEM / RECEPTACLE values
 python3 rose.py --no-logo                          # the earlier six-crescent whorl instead of the logo
+python3 rose.py --R 45 --wall 0.72 --tabletop 4    # 90 mm stemless tabletop rose, flat bottom, no socket
 ./build_all.sh                                     # everything: STLs, 3MF, previews, report, viewer
 python3 nesting.py                                 # radial-extent table of the petal layers
 ```
