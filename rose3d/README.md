@@ -25,6 +25,7 @@ Head: 59 × 60 × 43 mm. With stem: 161 mm tall. Petals 1.2–1.5 mm thick.
 | `rose_head_*.png`, `rose_side.png`, `compare.png` | preview renders and the comparison sheet against the reference |
 | `print_report.txt` | watertightness, wall-thickness and overhang report |
 | `tabletop90/` | stemless 90 mm rose that stands on a table (`--R 45 --wall 0.72 --tabletop 4`), sized to match a 91 mm peony; 2-colour 3MF + STLs |
+| `peony/` | the Madame Claude Tain peony (user's model): cleaned one-piece STL, plus a two-colour split (white petals + orange starburst medallion) as STLs and 3MF |
 | `classic/` | the earlier six-crescent whorl version (`python3 rose.py --no-logo`); 2-colour 3MF + previews |
 
 ## Printing
