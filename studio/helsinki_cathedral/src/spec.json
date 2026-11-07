@@ -1,0 +1,985 @@
+{
+ "meta": {
+  "building": "Helsinki Cathedral (Helsingin tuomiokirkko), golden hour, view from the foot of the grand stairs on Senate Square",
+  "units": "metres; z=0 at podium top; origin = main dome axis; +X east, +Y north; south facade (grand stairs) faces -Y",
+  "total_height_to_cross_top": 62.0,
+  "square_to_cross_top": 69.04,
+  "key_z_levels": {
+   "square_ground": -7.04,
+   "podium_top": 0.0,
+   "column_abacus_top_and_entablature_bottom": 11.5,
+   "main_cornice_top": 14.2,
+   "parapet_top_and_tower_base": 16.5,
+   "pediment_apex": 18.4,
+   "arm_roof_ridge": 18.3,
+   "attic_cornice_top_and_drum_base": 25.2,
+   "attic_balustrade_top": 26.4,
+   "drum_base_ring_bottom": 30.6,
+   "drum_shaft_bottom": 34.0,
+   "drum_cornice_top": 45.8,
+   "drum_top_and_dome_base": 47.5,
+   "dome_top": 54.5,
+   "orb_centre": 58.4,
+   "cross_top": 62.0,
+   "tower_cross_top": 36.1,
+   "apex_statue_feet": 18.8,
+   "corner_statue_feet": 15.7,
+   "drum_column_top": 42.2
+  },
+  "notes": [
+   "Numbers follow the photo fit (spec_photo.md, rms 5.9 px) anchored at 62.0 m podium->cross top, then refined with massing_check.py (27 photo landmarks, rms 10.5 px). spec_arch.md was used only for details the photo cannot show.",
+   "Plan: Greek cross with a RECTANGULAR core 33 x 39 m (X +-16.5, Y +-19.5) rising to the attic; arms 22 m wide (+-11). The exposed core corners (|x| in [11,16.5], |y| in [11,19.5]) are the 'corner blocks'; they carry the 4 towers whose pedestals are flush with the core faces.",
+   "The core attic (16.5->25.2) is a PLUS shape: the four corner squares |x| in [10.1,16.5] x |y| in [13.1,19.5] belong to the towers (domes module); the attic's south/north faces run between the tower pedestals at |y|=19.5, its east/west faces at |x|=16.5.",
+   "South/north porticos: column line |Y|=36.5, arm end wall |Y|=33.5. East/west porticos: column line |X|=29.5, wall |X|=26.5 (photo: the E portico's southernmost column and both E statues are inside the frame).",
+   "Camera is 22 m WEST of the axis, 114 m south, 1.5 m above the square: west faces are seen on both front towers and the drum. Sun from the west (azimuth 264, elevation 6.5; photo range 258-272): west faces gold, south faces only grazed (0.1 of direct sun: pale gold on plain bands, grey-blue where a return or cornice shadows them, e.g. the tympanum). Exposure -3.6 keeps the sky as bright as in the photo; the look module may tune sun kwargs within +-5 deg / +-0.4 EV.",
+   "In the photo the square, the stairs and the portico east of X~+2 (columns 4-6, east part of the back wall) lie in the shadow of buildings west of the square. Not required to reproduce.",
+   "The drum is wider than the dome (cornice R 8.35 vs dome R 7.15); its wall is R 7.1 and the engaged columns reach R 7.6 (the silhouette in the photo); it sits on a cylindrical pedestal hidden behind the attic balustrade from the camera.",
+   "Fixer r3: tower pediments rise 0.95 m over half_w 3.0 (17.6 deg, like the 19.3 deg main pediment), upper block 26.95-29.6, plain (no string course). Sun is an explicit warm Sun lamp (mod_look.setup_look: 23 W/m2, colour (1,0.55,0.12), sky disc off) so the lit whites go gold."
+  ]
+ },
+ "sun": {
+  "azimuth_deg": 279.0,
+  "elevation_deg": 6.5,
+  "exposure": -2.5,
+  "dust": 0.4,
+  "ozone": 2.0,
+  "air": 1.1
+ },
+ "camera": {
+  "location": [
+   -22.0,
+   -114.0,
+   -5.5
+  ],
+  "target": [
+   -3.4,
+   -23.4,
+   33.0
+  ],
+  "lens": 44.0,
+  "shift_y": 0.0,
+  "resolution": [
+   1536,
+   2048
+  ],
+  "preview_resolution": [
+   480,
+   640
+  ],
+  "notes": "sensor_fit AUTO: 36 mm on the long (vertical) side -> VFOV 44.5 deg, HFOV 34.1 deg; yaw 11.9 deg east of north, pitch 22.6 deg up; horizon just below the bottom edge; cross top ~34 % from the top; eye 1.54 m above square_ground_z. Look module: camera kept as fitted; render/view settings (Standard + look None, sun_intensity 0.5, exposure -2.45) live in mod_look.LOOK."
+ },
+ "square_ground_z": -7.04,
+ "podium": {
+  "half_w": 44.0,
+  "half_d": 44.0,
+  "south_y": -37.5,
+  "north_y": 44.0,
+  "top_z": 0.0,
+  "height": 7.04,
+  "bottom_z": -7.04,
+  "plinth": {
+   "material": "granite",
+   "top_coping_h": 0.35,
+   "coping_projection": 0.08,
+   "side_faces": "plain granite blocks; the south face is replaced by the grand stairs for |x| <= 28.8, granite wall only outside the stairs"
+  },
+  "notes": "Flat terrace z=0 carrying the whole cathedral; the stairs top edge IS the podium south edge y=-37.5, which is 1.0 m in front of the S column AXES and 0.1 m in front of the column plinth faces (plinth 1.8 sq). Body builds the podium slab + visible granite walls; statues_site builds the stairs and the square ground.",
+  "y_range": [
+   -37.5,
+   44.0
+  ],
+  "half_d_note": "half_d 44 is the NORTH extent only; use y_range (south edge = stairs top = -37.5), never +-half_d"
+ },
+ "stairs": {
+  "width": 56.0,
+  "half_w": 28.0,
+  "top_y": -37.5,
+  "top_z": 0.0,
+  "step_rise": 0.16,
+  "step_run": 0.37,
+  "n_steps": 44,
+  "bottom_y": -53.78,
+  "bottom_z": -7.04,
+  "landings": [],
+  "material": "granite",
+  "side_walls": {
+   "present": true,
+   "x_outer": 28.8,
+   "thickness": 0.8,
+   "height_above_steps": 0.45,
+   "top_profile": "follows the stair slope from z=0.45 at y=-37.5 to z=-6.6 at the foot, granite"
+  },
+  "notes": "One continuous flight, no landing, fills the frame bottom (~30 risers visible). 44 x 0.16 = 7.04 m drop; 44 x 0.37 = 16.28 m run."
+ },
+ "core": {
+  "half_w": 16.5,
+  "half_d": 19.5,
+  "z_base": 0.0,
+  "entablature_bottom_z": 11.5,
+  "cornice_top_z": 14.2,
+  "parapet_top_z": 16.5,
+  "wall_articulation": "same as arms: pilasters 1.0 w / 0.2 proud, lower window 2.2x3.6 (z 1.0-4.6), upper window 2.2x2.0 (z 6.6-8.6), pilaster capitals 9.7-11.5, relief panel 2.4x1.1 at z 9.9-11.0 between them; the exposed core faces are the corner-block faces (see corner_blocks); a 1.3 m wide corner pilaster at each convex corner",
+  "attic": {
+   "footprint": "plus: X +-16.5 for |y|<=13.1 and Y +-19.5 for |x|<=10.1; the 4 rectangles |x| in [10.1,16.5] x |y| in [13.1,19.5] are the towers' (not built by body above z 16.5)",
+   "half_w": 16.5,
+   "half_d": 19.5,
+   "arm_half_w": 10.1,
+   "arm_half_d": 13.1,
+   "z_base": 16.5,
+   "wall_top_z": 24.6,
+   "cornice_h": 0.6,
+   "cornice_projection": 0.5,
+   "cornice_top_z": 25.2,
+   "top_z": 25.2,
+   "roof": "flat dark copper at z 25.2 inside the balustrade; the drum pedestal rises from it",
+   "balustrade": {
+    "z_base": 25.2,
+    "height": 1.2,
+    "top_z": 26.4,
+    "baluster_pitch": 0.3,
+    "rail_w": 0.35,
+    "pedestals_at": "each end of each face (next to the towers)"
+   },
+   "thermal_window": {
+    "width": 4.6,
+    "z_bottom": 23.0,
+    "z_top": 24.4,
+    "shape": "segmental (half-ellipse) with 2 mullions",
+    "x_centre": 0.0,
+    "one_per_face": true
+   },
+   "side_windows": {
+    "width": 1.6,
+    "height": 3.0,
+    "z_bottom": 19.5,
+    "offsets_along_face": [
+     -6.5,
+     6.5
+    ],
+    "shape": "round-headed, louvred, in a shallow arched panel"
+   },
+   "corner_pilasters": {
+    "width": 1.0,
+    "projection": 0.2
+   }
+  },
+  "notes": "cornice_top_z 14.2 and the entablature (11.5-14.2) run continuously around core corners, arms and porticos. Core footprint under the arms/towers is solid: body may build it as one box 0->16.5 plus the plus-shaped attic."
+ },
+ "arms": {
+  "common": {
+   "half_w": 11.0,
+   "z_base": 0.0,
+   "wall_top_z": 14.2,
+   "entablature": {
+    "z_bottom": 11.5,
+    "architrave_h": 0.75,
+    "frieze_h": 0.65,
+    "cornice_h": 1.3,
+    "z_top": 14.2,
+    "cornice_projection": 0.9,
+    "dentils": true
+   },
+   "parapet": {
+    "z_bottom": 14.2,
+    "z_top": 16.5,
+    "thickness": 0.6,
+    "material": "wall",
+    "coping_h": 0.15,
+    "note": "plain band (the photo shows it lit gold on all arms)"
+   },
+   "roof": {
+    "type": "gable along the arm axis; it dies into the core attic wall",
+    "eaves_z": 16.3,
+    "ridge_z": 18.3,
+    "pitch_deg": 10.3,
+    "material": "roof_dark",
+    "note": "ridge from the arm end wall to the core face, 0.1 below the pediment apex (18.4); the dark roof shows above the raking cornices as in the photo"
+   },
+   "pilasters": {
+    "width": 1.0,
+    "projection": 0.2,
+    "pitch": 4.0,
+    "capital_z": [
+     9.7,
+     11.5
+    ],
+    "base_h": 0.6,
+    "corner_pilasters": true
+   },
+   "windows_lower": {
+    "width": 2.2,
+    "height": 3.6,
+    "z_bottom": 1.0,
+    "frame_w": 0.18,
+    "panes": [
+     4,
+     6
+    ]
+   },
+   "windows_upper": {
+    "width": 2.2,
+    "height": 2.0,
+    "z_bottom": 6.6,
+    "frame_w": 0.15,
+    "panes": [
+     4,
+     3
+    ]
+   },
+   "relief_panels": {
+    "width": 2.4,
+    "height": 1.1,
+    "z_bottom": 9.9,
+    "relief": 0.08
+   },
+   "flank_bays": "one bay per ~4.0 m between pilasters along each flank; the bay next to the portico carries the anta pilaster (1.3 w)"
+  },
+  "south": {
+   "axis": "-Y",
+   "end_wall_y": -33.5,
+   "length_from_core_face": 14.0,
+   "x_range": [
+    -11.0,
+    11.0
+   ],
+   "y_range": [
+    -33.5,
+    -19.5
+   ]
+  },
+  "north": {
+   "axis": "+Y",
+   "end_wall_y": 33.5,
+   "length_from_core_face": 14.0,
+   "x_range": [
+    -11.0,
+    11.0
+   ],
+   "y_range": [
+    19.5,
+    33.5
+   ]
+  },
+  "east": {
+   "axis": "+X",
+   "end_wall_x": 26.5,
+   "length_from_core_face": 10.0,
+   "x_range": [
+    16.5,
+    26.5
+   ],
+   "y_range": [
+    -11.0,
+    11.0
+   ]
+  },
+  "west": {
+   "axis": "-X",
+   "end_wall_x": -26.5,
+   "length_from_core_face": 10.0,
+   "x_range": [
+    -26.5,
+    -16.5
+   ],
+   "y_range": [
+    -11.0,
+    11.0
+   ]
+  },
+  "notes": "Arm end walls at |Y|=33.5 (S/N) and |X|=26.5 (E/W); the porticos stand 3.0 m in front of them. The portico back wall (door, relief panels) IS the arm end wall and belongs to body."
+ },
+ "corner_blocks": {
+  "footprints": [
+   {
+    "name": "SE",
+    "x_range": [
+     11.0,
+     16.5
+    ],
+    "y_range": [
+     -19.5,
+     -11.0
+    ]
+   },
+   {
+    "name": "SW",
+    "x_range": [
+     -16.5,
+     -11.0
+    ],
+    "y_range": [
+     -19.5,
+     -11.0
+    ]
+   },
+   {
+    "name": "NE",
+    "x_range": [
+     11.0,
+     16.5
+    ],
+    "y_range": [
+     11.0,
+     19.5
+    ]
+   },
+   {
+    "name": "NW",
+    "x_range": [
+     -16.5,
+     -11.0
+    ],
+    "y_range": [
+     11.0,
+     19.5
+    ]
+   }
+  ],
+  "z_base": 0.0,
+  "cornice_top_z": 14.2,
+  "top_z": 16.5,
+  "roof": "flat at z 16.5 (dark copper) - mostly covered by the tower pedestal (6.4 m square centred at (+-13.3, +-16.3))",
+  "facade": "exposed faces: south/north face at |y|=19.5 for |x| in [11,16.5] (5.5 m: one pilaster bay with a relief panel, a sunk panel and a small window, corner pilaster 1.3 w at the convex corner) and east/west face at |x|=16.5 for |y| in [11,19.5] (8.5 m: two bays); same entablature + parapet as the arms",
+  "notes": "These are simply the exposed corners of the 33 x 39 core below the attic. towers.z_base == corner_blocks.top_z == 16.5."
+ },
+ "portico": {
+  "instances": [
+   {
+    "name": "S",
+    "axis": "-Y",
+    "column_line": -36.5,
+    "wall": -33.5,
+    "facing_deg": 180,
+    "has_grand_stairs": true
+   },
+   {
+    "name": "N",
+    "axis": "+Y",
+    "column_line": 36.5,
+    "wall": 33.5,
+    "facing_deg": 0,
+    "has_grand_stairs": false
+   },
+   {
+    "name": "E",
+    "axis": "+X",
+    "column_line": 29.5,
+    "wall": 26.5,
+    "facing_deg": 90,
+    "has_grand_stairs": false
+   },
+   {
+    "name": "W",
+    "axis": "-X",
+    "column_line": -29.5,
+    "wall": -26.5,
+    "facing_deg": 270,
+    "has_grand_stairs": false
+   }
+  ],
+  "columns": 6,
+  "column_offsets": [
+   -10.1,
+   -6.2,
+   -2.3,
+   2.3,
+   6.2,
+   10.1
+  ],
+  "spacing": {
+   "centre_bay": 4.6,
+   "other_bays": 3.9
+  },
+  "depth": 3.0,
+  "column_h": 11.5,
+  "base_h": 0.75,
+  "plinth_w": 1.8,
+  "plinth_h": 0.3,
+  "torus_r": 0.78,
+  "shaft_z": [
+   0.75,
+   9.7
+  ],
+  "r_bottom": 0.675,
+  "r_top": 0.575,
+  "entasis": "straight taper from 1/3 height",
+  "capital_h": 1.8,
+  "capital_z": [
+   9.7,
+   11.5
+  ],
+  "abacus_w": 1.7,
+  "order": "Corinthian (two tiers of acanthus leaves + volutes; a lathe bell + box abacus is acceptable)",
+  "stylobate": {
+   "height": 0.0,
+   "note": "none - the columns' plinths stand directly on the podium top z=0 (photo: plinth bottom at z 0.06). Body owns the floor surface."
+  },
+  "steps": {
+   "note": "none built by portico: the south grand stairs belong to statues_site; N/E/W porticos have no stairs in this model (podium is a flat terrace)"
+  },
+  "entablature": {
+   "z_bottom": 11.5,
+   "architrave_h": 0.75,
+   "frieze_h": 0.65,
+   "cornice_h": 1.3,
+   "z_top": 14.2,
+   "half_w": 12.0,
+   "projection": 0.9,
+   "front_face_offset_from_column_line": 0.9,
+   "returns": "short returns from the column line back to the arm end wall (3.0 m) on both flanks at |offset| = 12.0; the arm/core entablature continues from there (body)",
+   "dentils": true,
+   "modillions": true,
+   "ratio_note": "entablature 2.7 m = 23.5 % of the 11.5 m column (photo: abacus top y~1468 -> z 11.5-11.6)"
+  },
+  "pediment": {
+   "base_z": 14.2,
+   "apex_z": 18.4,
+   "half_w": 12.0,
+   "rake_deg": 19.3,
+   "height": 4.2,
+   "raking_cornice_h": 0.7,
+   "raking_cornice_projection": 0.9,
+   "tympanum_setback": 0.5,
+   "tympanum_apex_z": 17.65,
+   "depth": "tympanum wall 0.6 thick in the column-line plane; the gable roof behind (ridge 18.3) belongs to body",
+   "tympanum": "plain (no sculpture)",
+   "raking_cornice_ends": "the raking cornices run from the apex down to |offset| raking_cornice_x_end = 10.75 (beyond the corner pedestals at 9.6); the horizontal cornice continues to +-12.0",
+   "photo_note": "photo: cornice apex y~1272 vs corner tips y~1386/1397 -> height/width = 0.88 x the former 4.6 m => 4.2 m (pitch 4.2/24 = 1:5.7)",
+   "raking_cornice_x_end": 10.75
+  },
+  "anta": {
+   "width": 1.3,
+   "projection": 0.3,
+   "note": "pilaster on each flank at the arm end-wall corner, carrying the entablature return; the flank between the end column and the anta is OPEN (no pier)"
+  },
+  "acroteria_pedestals": {
+   "apex": {
+    "offset_along_facade": 0.0,
+    "z_base": 17.9,
+    "z_top": 18.8,
+    "size": 1.2,
+    "set_on": "column line (centre of the entablature depth)"
+   },
+   "corners": {
+    "offset_along_facade": 9.6,
+    "z_base": 14.2,
+    "z_top": 15.7,
+    "size": 1.1,
+    "set_on": "top of the horizontal cornice / inside the tympanum, directly above the end columns (photo), centred 0.9 m behind the column line so the raking cornice hides its lower part; top 15.7 shows ~0.3 m above the raking cornice",
+    "setback_from_column_line": 0.9
+   },
+   "notes": "statue z == pedestal z_top: apex 18.8, corners 15.7. Pedestal plan position = (offset along facade, column_line + setback toward the wall) rotated per instance. The apex pedestal is embedded in the pediment (apex 18.4) and shows 0.4 m above it. The raking cornice runs independently to pediment.raking_cornice_x_end (10.75)."
+  },
+  "back_wall": {
+   "owner": "body",
+   "door": {
+    "width": 1.65,
+    "height": 4.5,
+    "frame_w": 2.75,
+    "leaf_h": 3.05,
+    "hood_z": [
+     4.6,
+     5.1
+    ],
+    "sill_z": 0.2
+   },
+   "relief_panels_z": [
+    9.9,
+    11.0
+   ],
+   "responding_pilasters": "one behind each column, 1.0 w"
+  }
+ },
+ "drum": {
+  "z_base": 25.2,
+  "top_z": 47.5,
+  "height": 22.3,
+  "pedestal": {
+   "radius": 8.3,
+   "z_bottom": 25.2,
+   "z_top": 30.6,
+   "note": "plain cylinder; hidden behind the attic balustrade from the camera"
+  },
+  "base_ring": {
+   "radius": 8.7,
+   "z_bottom": 30.6,
+   "z_top": 33.0,
+   "cornice_h": 0.6,
+   "cornice_projection": 0.35
+  },
+  "foot": {
+   "radius_bottom": 7.7,
+   "radius_top": 7.1,
+   "z_bottom": 33.0,
+   "z_top": 34.0
+  },
+  "radius": 7.1,
+  "shaft_z": [
+   34.0,
+   40.8
+  ],
+  "columns": {
+   "count": 12,
+   "azimuth_offset_deg": 15.0,
+   "r_axis": 7.05,
+   "radius": 0.55,
+   "radius_top": 0.48,
+   "base_h": 0.4,
+   "capital_h": 1.4,
+   "z_base": 34.0,
+   "z_top": 42.2,
+   "engaged": true,
+   "note": "bays centred on N/S/E/W (clock in the S bay); columns at azimuth 15+30k deg (clockwise from +Y); shaft 34.0-40.8, capital 40.8-42.2; outer face r 7.6 (0.5 m proud of the 7.1 wall), 0.15 inside the entablature face",
+   "shaft_top_z": 40.8
+  },
+  "entablature": {
+   "radius": 7.75,
+   "z_bottom": 42.2,
+   "z_top": 43.8,
+   "note": "architrave + frieze (1.6 m) between the capitals and the dentil cornice"
+  },
+  "cornice": {
+   "radius_bottom": 7.75,
+   "radius": 8.35,
+   "z_bottom": 43.8,
+   "z_top": 45.8,
+   "dentils": true
+  },
+  "attic_ring": {
+   "radius": 7.3,
+   "z_bottom": 45.8,
+   "z_top": 47.5,
+   "material": "white_paint"
+  },
+  "windows": {
+   "tall": {
+    "width": 2.2,
+    "height": 3.3,
+    "z_bottom": 34.3,
+    "shape": "flat-headed, 4x6 panes",
+    "in_every_bay": true
+   },
+   "small": {
+    "width": 1.1,
+    "height": 1.2,
+    "z_bottom": 38.2,
+    "in_every_bay_except_S": true
+   }
+  },
+  "clock": {
+   "face": "S",
+   "z": 38.9,
+   "diameter": 1.9,
+   "rim_w": 0.1,
+   "colour": "black face, white marks/hands",
+   "note": "replaces the small window in the south bay"
+  },
+  "notes": "Everything in 'drum' from z 25.2 up belongs to domes. Column height 8.2 (shaft 6.8 + capital 1.4); entablature+cornice 3.6 m above it as the photo shows (heavy crown).",
+  "radius_note": "radius = the shaft WALL (7.1). The engaged columns reach r 7.6, which is the silhouette the photo shows (\u00d815.2); entablature 7.75, cornice 7.75->8.35, attic ring 7.3."
+ },
+ "dome": {
+  "z_base": 47.5,
+  "radius": 7.15,
+  "rise": 7.0,
+  "top_z": 54.5,
+  "ribs": 16,
+  "rib_w": 0.2,
+  "material": "copper_green",
+  "lantern": {
+   "z_bottom": 54.5,
+   "z_top": 57.2,
+   "r_base": 1.0,
+   "r_neck": 0.65,
+   "fluted": true,
+   "material": "copper_green"
+  },
+  "orb": {
+   "r": 0.72,
+   "z": 58.4,
+   "neck_r": 0.18,
+   "material": "gold"
+  },
+  "cross": {
+   "z_base": 59.1,
+   "h": 2.9,
+   "w": 1.2,
+   "thickness": 0.12,
+   "crossbar_z": 60.6,
+   "top_z": 62.0,
+   "material": "gold"
+  }
+ },
+ "towers": {
+  "positions": [
+   [
+    13.3,
+    -16.3
+   ],
+   [
+    -13.3,
+    -16.3
+   ],
+   [
+    13.3,
+    16.3
+   ],
+   [
+    -13.3,
+    16.3
+   ]
+  ],
+  "names": [
+   "SE",
+   "SW",
+   "NE",
+   "NW"
+  ],
+  "half_w": 2.8,
+  "z_base": 16.5,
+  "pedestal": {
+   "half_w": 3.2,
+   "z_bottom": 16.5,
+   "z_top": 18.3,
+   "small_windows": {
+    "count_per_face": 2,
+    "size": [
+     0.5,
+     0.6
+    ],
+    "z_bottom": 17.1,
+    "spacing": 1.2
+   }
+  },
+  "balustrade": {
+   "z_bottom": 18.3,
+   "height": 1.1,
+   "top_z": 19.4,
+   "on": "outer edge of the pedestal top, around the shaft",
+   "baluster_pitch": 0.28
+  },
+  "shaft": {
+   "half_w": 2.8,
+   "z_bottom": 18.3,
+   "z_top": 24.7
+  },
+  "shaft_h": 6.4,
+  "arch_window": {
+   "width": 2.4,
+   "z_bottom": 19.7,
+   "z_top": 23.8,
+   "spring_z": 22.6,
+   "louvred": true,
+   "panel_recess": 0.15,
+   "per_face": true
+  },
+  "corner_pilasters": {
+   "width": 0.8,
+   "projection": 0.15
+  },
+  "entablature": {
+   "half_w": 3.0,
+   "z_bottom": 24.7,
+   "z_top": 26.0,
+   "dentils": true
+  },
+  "pediments": {
+   "per_face": true,
+   "base_z": 26.0,
+   "apex_z": 26.95,
+   "half_w": 3.0,
+   "cornice_h": 0.25
+  },
+  "upper_block": {
+   "half_w": 2.7,
+   "z_bottom": 26.95,
+   "z_top": 29.6
+  },
+  "cornice": {
+   "half_w": 3.0,
+   "z_bottom": 29.6,
+   "z_top": 30.0
+  },
+  "dome": {
+   "z_base": 30.0,
+   "r": 2.8,
+   "rise": 3.1,
+   "top_z": 33.1,
+   "ribs": 8,
+   "material": "copper_green"
+  },
+  "orb": {
+   "r": 0.35,
+   "z": 34.0,
+   "neck": [
+    33.1,
+    33.65
+   ],
+   "material": "gold"
+  },
+  "cross": {
+   "z_base": 34.35,
+   "h": 1.75,
+   "w": 0.8,
+   "thickness": 0.08,
+   "top_z": 36.1,
+   "material": "gold"
+  },
+  "gold_stars": {
+   "count": 30,
+   "size": 0.3,
+   "rows": 3,
+   "points": 8,
+   "relief": 0.03
+  },
+  "notes": "Tower pedestal 6.4 m square sits on the corner block (z 16.5) with its outer faces flush with the core faces (|x|=16.5, |y|=19.5); its inner faces at |x|=10.1 / |y|=13.1 meet the attic. The lit WEST faces of both front towers are visible from the camera."
+ },
+ "statues": [
+  {
+   "name": "S_apex",
+   "pos": [
+    0,
+    -36.5,
+    18.8
+   ],
+   "facing_deg": 180,
+   "yaw_deg": 180,
+   "height": 3.1,
+   "on": "S pediment apex pedestal"
+  },
+  {
+   "name": "S_west",
+   "pos": [
+    -9.6,
+    -35.6,
+    15.7
+   ],
+   "facing_deg": 180,
+   "yaw_deg": 180,
+   "height": 3.1,
+   "on": "S pediment west corner pedestal"
+  },
+  {
+   "name": "S_east",
+   "pos": [
+    9.6,
+    -35.6,
+    15.7
+   ],
+   "facing_deg": 180,
+   "yaw_deg": 180,
+   "height": 3.1,
+   "on": "S pediment east corner pedestal"
+  },
+  {
+   "name": "N_apex",
+   "pos": [
+    0,
+    36.5,
+    18.8
+   ],
+   "facing_deg": 0,
+   "yaw_deg": 0,
+   "height": 3.1,
+   "on": "N pediment apex pedestal"
+  },
+  {
+   "name": "N_west",
+   "pos": [
+    -9.6,
+    35.6,
+    15.7
+   ],
+   "facing_deg": 0,
+   "yaw_deg": 0,
+   "height": 3.1,
+   "on": "N pediment west corner pedestal"
+  },
+  {
+   "name": "N_east",
+   "pos": [
+    9.6,
+    35.6,
+    15.7
+   ],
+   "facing_deg": 0,
+   "yaw_deg": 0,
+   "height": 3.1,
+   "on": "N pediment east corner pedestal"
+  },
+  {
+   "name": "E_apex",
+   "pos": [
+    29.5,
+    0,
+    18.8
+   ],
+   "facing_deg": 90,
+   "yaw_deg": 90,
+   "height": 3.1,
+   "on": "E pediment apex pedestal"
+  },
+  {
+   "name": "E_south",
+   "pos": [
+    28.6,
+    -9.6,
+    15.7
+   ],
+   "facing_deg": 90,
+   "yaw_deg": 90,
+   "height": 3.1,
+   "on": "E pediment south corner pedestal"
+  },
+  {
+   "name": "E_north",
+   "pos": [
+    28.6,
+    9.6,
+    15.7
+   ],
+   "facing_deg": 90,
+   "yaw_deg": 90,
+   "height": 3.1,
+   "on": "E pediment north corner pedestal"
+  },
+  {
+   "name": "W_apex",
+   "pos": [
+    -29.5,
+    0,
+    18.8
+   ],
+   "facing_deg": 270,
+   "yaw_deg": 270,
+   "height": 3.1,
+   "on": "W pediment apex pedestal"
+  },
+  {
+   "name": "W_south",
+   "pos": [
+    -28.6,
+    -9.6,
+    15.7
+   ],
+   "facing_deg": 270,
+   "yaw_deg": 270,
+   "height": 3.1,
+   "on": "W pediment south corner pedestal"
+  },
+  {
+   "name": "W_north",
+   "pos": [
+    -28.6,
+    9.6,
+    15.7
+   ],
+   "facing_deg": 270,
+   "yaw_deg": 270,
+   "height": 3.1,
+   "on": "W pediment north corner pedestal"
+  }
+ ],
+ "materials": {
+  "white_paint": {
+   "rgb": [
+    0.8388,
+    0.7991,
+    0.7231
+   ],
+   "roughness": 0.55,
+   "use": "columns, pilasters, capitals, entablatures, cornices, pediments, drum, towers, balustrades, window frames"
+  },
+  "wall": {
+   "rgb": [
+    0.6724,
+    0.624,
+    0.5395
+   ],
+   "roughness": 0.65,
+   "use": "plain wall fields between pilasters (arms, core, corner blocks, portico back wall, attic), parapet bands"
+  },
+  "copper_green": {
+   "rgb": [
+    0.055,
+    0.072,
+    0.04
+   ],
+   "roughness": 0.7,
+   "metallic": 0.0,
+   "use": "main dome, tower domes, lantern"
+  },
+  "roof_dark": {
+   "rgb": [
+    0.0343,
+    0.0545,
+    0.0423
+   ],
+   "roughness": 0.6,
+   "use": "arm roofs, corner-block roofs, attic roof, drum pedestal top"
+  },
+  "gold": {
+   "rgb": [
+    1.0,
+    0.6105,
+    0.1022
+   ],
+   "roughness": 0.25,
+   "metallic": 1.0,
+   "use": "orbs, crosses, tower stars, clock hands"
+  },
+  "granite": {
+   "rgb": [
+    0.09,
+    0.084,
+    0.07
+   ],
+   "roughness": 0.85,
+   "use": "grand stairs, stair side walls, podium walls"
+  },
+  "zinc": {
+   "rgb": [
+    0.7529,
+    0.7305,
+    0.6584
+   ],
+   "roughness": 0.6,
+   "use": "the 12 apostle statues"
+  },
+  "glass": {
+   "rgb": [
+    0.0097,
+    0.013,
+    0.0194
+   ],
+   "roughness": 0.15,
+   "use": "window panes"
+  },
+  "wood_door": {
+   "rgb": [
+    0.1878,
+    0.0648,
+    0.0176
+   ],
+   "roughness": 0.5,
+   "use": "door leaves"
+  },
+  "ground": {
+   "rgb": [
+    0.1144,
+    0.107,
+    0.0976
+   ],
+   "roughness": 0.9,
+   "use": "Senate Square cobbles"
+  },
+  "notes": "rgb = LINEAR RGB (Principled Base Color). Converted from sRGB: white (236,231,221), wall (214,207,194), patina: fixer r3 olive base (0.055,0.072,0.040) linear, roughness 0.7, specular 0.15 (r2 (0.035,0.055,0.035)/0.35 was too dark on the sun-lit limb and mirrored the sky at the grazing limbs) with a warm specular tint in mod_look (the teal (0.04,0.07,0.055) rendered the dome's W half grey-teal instead of the photo's golden-olive), gold (255,205,90), granite (118,114,110) -> darkened to (0.09,0.084,0.070) linear by fixer r2 (stairs rendered 0.8 EV too bright/blue), zinc (225,222,212)."
+ },
+ "ownership": {
+  "body": "podium slab + visible granite podium walls (not the stairs), core 0-16.5 incl. corner blocks, core attic (plus-shape 16.5-25.2) with cornice + balustrade + windows + flat roof, arms with walls/pilasters/windows/relief panels, the continuous entablature around arms + core (NOT the portico's part between |offset|<=12 in front of the end walls), parapet bands, arm gable roofs, portico back walls incl. doors and responding pilasters",
+  "portico": "for each of the 4 porticos: column plinths/bases/shafts/capitals, the entablature from the column line back to the arm end wall incl. its two 3 m returns, pediment (raking cornices + tympanum), antae, 3 acroteria pedestals; no stylobate/steps",
+  "domes": "drum from z 25.2 (pedestal, base ring, foot, shaft, 12 columns, windows, clock, entablature, cornice, attic ring), main dome + ribs + lantern + orb + cross; the 4 towers from z_base 16.5 (pedestal, balustrade, shaft, arch windows, entablature, pediments, upper block, cornice, star dome, orb, cross)",
+  "statues_site": "12 apostle statues (on the portico pedestals, z = pedestal z_top), the grand stairs + side walls from y=-37.5 down to the square, Senate Square ground plane at z=-7.04 (large, >= 400 m)",
+  "look": "materials (MATERIAL_SPECS overrides from spec.materials), sky/sun (setup_sun_sky(**spec.sun)), camera (setup_camera from spec.camera), render settings"
+ },
+ "statues_notes": "pos = centre of the figure's feet = pedestal z_top (corner figures 0.9 m behind the column line, on the set-back corner pedestals). facing_deg/yaw_deg = compass direction the figure FACES: 0 = +Y north, 90 = +X east, 180 = -Y south (toward the camera), 270 = -X west. For a figure modelled facing +Y use rotation_euler.z = radians(-yaw_deg). Statue height 3.1 m (zinc), standing, draped, one arm raised; pedestals belong to portico. Visible in the photo: S apex + both S corners, E apex + E south corner, W south corner (frame edge)."
+}
