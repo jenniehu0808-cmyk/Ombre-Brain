@@ -170,7 +170,7 @@ def new_mat(name, base=(0.8, 0.8, 0.8), rough=0.6, metal=0.0, **kw):
     return m
 
 
-def mat_portland(name='M_Portland', tint=(0.80, 0.78, 0.73), dark=(0.60, 0.58, 0.54), block=(1.15, 0.58),
+def mat_portland(name='M_Portland', tint=(0.74, 0.725, 0.685), dark=(0.54, 0.525, 0.50), block=(1.15, 0.58),
                  rough=0.78, grime=0.35):
     """Portland stone ashlar: large blocks, slight colour variation, AO-driven weathering."""
     m = new_mat(name, tint, rough)
@@ -218,7 +218,25 @@ def mat_portland(name='M_Portland', tint=(0.80, 0.78, 0.73), dark=(0.60, 0.58, 0
     mix2.inputs['Factor'].default_value = grime
     nt.links.new(mix1.outputs[2], mix2.inputs[6])
     nt.links.new(aoramp.outputs['Color'], mix2.inputs[7])
-    nt.links.new(mix2.outputs[2], p.inputs['Base Color'])
+    # vertical rain streaks (noise stretched along Z)
+    mp = _node(nt, 'ShaderNodeMapping')
+    mp.inputs['Scale'].default_value = (2.5, 2.5, 0.12)
+    nt.links.new(coord.outputs['Object'], mp.inputs['Vector'])
+    streak = _node(nt, 'ShaderNodeTexNoise')
+    streak.inputs['Scale'].default_value = 1.0
+    streak.inputs['Detail'].default_value = 4
+    nt.links.new(mp.outputs[0], streak.inputs['Vector'])
+    sramp = _node(nt, 'ShaderNodeValToRGB')
+    sramp.color_ramp.elements[0].position = 0.42
+    sramp.color_ramp.elements[0].color = (0.70, 0.70, 0.68, 1)
+    sramp.color_ramp.elements[1].position = 0.62
+    sramp.color_ramp.elements[1].color = (1, 1, 1, 1)
+    nt.links.new(streak.outputs['Fac'], sramp.inputs[0])
+    mix3 = _node(nt, 'ShaderNodeMix', data_type='RGBA', blend_type='MULTIPLY')
+    mix3.inputs['Factor'].default_value = 0.55
+    nt.links.new(mix2.outputs[2], mix3.inputs[6])
+    nt.links.new(sramp.outputs['Color'], mix3.inputs[7])
+    nt.links.new(mix3.outputs[2], p.inputs['Base Color'])
     fine = _node(nt, 'ShaderNodeTexNoise')
     fine.inputs['Scale'].default_value = 60.0
     fine.inputs['Detail'].default_value = 2.0
@@ -278,27 +296,28 @@ def mat_copper(name='M_Copper', patina=False):
         nt.links.new(noise.outputs['Fac'], ramp.inputs[0])
         nt.links.new(ramp.outputs['Color'], p.inputs['Base Color'])
         return m
-    m = new_mat(name, (0.70, 0.42, 0.32), 0.40, 1.0)
+    # ~18 months after re-covering: uniform dull chocolate-brown copper with a faint warm sheen
+    m = new_mat(name, (0.36, 0.21, 0.14), 0.42, 1.0)
     nt = m.node_tree
     p = _principled(m)
     coord = _node(nt, 'ShaderNodeTexCoord')
     noise = _node(nt, 'ShaderNodeTexNoise')
-    noise.inputs['Scale'].default_value = 2.2
-    noise.inputs['Detail'].default_value = 5
-    noise.inputs['Roughness'].default_value = 0.6
+    noise.inputs['Scale'].default_value = 1.4
+    noise.inputs['Detail'].default_value = 3
+    noise.inputs['Roughness'].default_value = 0.5
     nt.links.new(coord.outputs['Object'], noise.inputs['Vector'])
     ramp = _node(nt, 'ShaderNodeValToRGB')
-    ramp.color_ramp.elements[0].position = 0.38
-    ramp.color_ramp.elements[0].color = (0.30, 0.16, 0.11, 1)   # darkening oxide (brown)
-    ramp.color_ramp.elements[1].position = 0.62
-    ramp.color_ramp.elements[1].color = (0.74, 0.45, 0.33, 1)   # dulled penny copper
+    ramp.color_ramp.elements[0].position = 0.3
+    ramp.color_ramp.elements[0].color = (0.30, 0.17, 0.12, 1)
+    ramp.color_ramp.elements[1].position = 0.7
+    ramp.color_ramp.elements[1].color = (0.42, 0.25, 0.17, 1)
     nt.links.new(noise.outputs['Fac'], ramp.inputs[0])
     nt.links.new(ramp.outputs['Color'], p.inputs['Base Color'])
     rr = _node(nt, 'ShaderNodeMapRange')
     rr.inputs['From Min'].default_value = 0.3
     rr.inputs['From Max'].default_value = 0.7
-    rr.inputs['To Min'].default_value = 0.55
-    rr.inputs['To Max'].default_value = 0.28
+    rr.inputs['To Min'].default_value = 0.48
+    rr.inputs['To Max'].default_value = 0.38
     nt.links.new(noise.outputs['Fac'], rr.inputs['Value'])
     nt.links.new(rr.outputs[0], p.inputs['Roughness'])
     fine = _node(nt, 'ShaderNodeTexNoise')
@@ -411,17 +430,25 @@ def mat_foliage(name='M_Plane_Autumn'):
     p = _principled(m)
     coord = _node(nt, 'ShaderNodeTexCoord')
     n = _node(nt, 'ShaderNodeTexNoise')
-    n.inputs['Scale'].default_value = 3.0
-    n.inputs['Detail'].default_value = 8
-    n.inputs['Roughness'].default_value = 0.75
+    n.inputs['Scale'].default_value = 11.0
+    n.inputs['Detail'].default_value = 10
+    n.inputs['Roughness'].default_value = 0.85
     nt.links.new(coord.outputs['Object'], n.inputs['Vector'])
-    ramp = _node(nt, 'ShaderNodeValToRGB')
-    ramp.color_ramp.elements[0].position = 0.42
-    ramp.color_ramp.elements[0].color = (0, 0, 0, 1)
-    ramp.color_ramp.elements[1].position = 0.50
-    ramp.color_ramp.elements[1].color = (1, 1, 1, 1)
-    nt.links.new(n.outputs['Fac'], ramp.inputs[0])
-    nt.links.new(ramp.outputs['Color'], p.inputs['Alpha'])
+    # density varies across the canopy: dense clumps and bare November patches
+    dens = _node(nt, 'ShaderNodeTexNoise')
+    dens.inputs['Scale'].default_value = 0.6
+    dens.inputs['Detail'].default_value = 2
+    nt.links.new(coord.outputs['Object'], dens.inputs['Vector'])
+    thr = _node(nt, 'ShaderNodeMapRange')
+    thr.inputs['From Min'].default_value = 0.3
+    thr.inputs['From Max'].default_value = 0.7
+    thr.inputs['To Min'].default_value = 0.45
+    thr.inputs['To Max'].default_value = 0.56
+    nt.links.new(dens.outputs['Fac'], thr.inputs['Value'])
+    cmp = _node(nt, 'ShaderNodeMath', operation='GREATER_THAN')
+    nt.links.new(n.outputs['Fac'], cmp.inputs[0])
+    nt.links.new(thr.outputs[0], cmp.inputs[1])
+    nt.links.new(cmp.outputs[0], p.inputs['Alpha'])
     c = _node(nt, 'ShaderNodeTexNoise')
     c.inputs['Scale'].default_value = 0.8
     nt.links.new(coord.outputs['Object'], c.inputs['Vector'])
@@ -437,7 +464,7 @@ def mat_foliage(name='M_Plane_Autumn'):
 
 def build_materials():
     mat_portland()
-    mat_portland('M_Portland_Base', tint=(0.74, 0.71, 0.65), dark=(0.55, 0.52, 0.48), block=(1.4, 0.7), grime=0.5)
+    mat_portland('M_Portland_Base', tint=(0.70, 0.68, 0.64), dark=(0.50, 0.49, 0.46), block=(1.4, 0.7), grime=0.5)
     mat_portland('M_Lion', tint=(0.46, 0.44, 0.41), dark=(0.26, 0.25, 0.24), block=(8, 8), grime=0.8)
     mat_brick()
     mat_copper('M_Copper', patina=OPTS['patina'])
@@ -446,7 +473,7 @@ def build_materials():
     new_mat('M_Gold', (1.0, 0.76, 0.33), 0.22, 1.0)
     new_mat('M_Glass', (0.02, 0.03, 0.035), 0.06, 0.0)
     _principled(MATS['M_Glass']).inputs['IOR'].default_value = 1.6
-    new_mat('M_Timber', (0.12, 0.085, 0.06), 0.72)
+    new_mat('M_Timber', (0.21, 0.16, 0.12), 0.75)
     new_mat('M_Door', (0.16, 0.10, 0.06), 0.55)
     new_mat('M_Iron', (0.05, 0.05, 0.055), 0.45, 0.6)
     new_mat('M_Bronze', (0.45, 0.33, 0.18), 0.4, 1.0)
@@ -460,8 +487,8 @@ def build_materials():
     mat_paving('M_Paving', (0.46, 0.44, 0.41), (0.9, 0.6), 0.02)
     mat_paving('M_Setts', (0.36, 0.35, 0.34), (0.2, 0.1), 0.012, 0.75)
     mat_paving('M_York', (0.52, 0.49, 0.44), (1.2, 0.75), 0.015)
-    mat_facade('M_Sherfield', (0.68, 0.66, 0.62), (0.03, 0.04, 0.05), (3.0, 3.6), 0.3)
-    mat_facade('M_Library', (0.55, 0.53, 0.50), (0.02, 0.03, 0.035), (1.6, 3.4), 0.18)
+    mat_facade('M_Sherfield', (0.74, 0.72, 0.68), (0.04, 0.05, 0.06), (2.6, 3.5), 0.6)
+    mat_facade('M_Library', (0.62, 0.60, 0.57), (0.03, 0.035, 0.04), (1.6, 3.4), 0.35)
     mat_facade('M_Chem', (0.58, 0.52, 0.45), (0.03, 0.03, 0.03), (2.4, 3.8), 0.5)
     mat_facade('M_RSM', (0.70, 0.64, 0.55), (0.03, 0.03, 0.03), (2.0, 4.2), 1.0)
     mat_foliage()
@@ -886,12 +913,12 @@ H2 = 5.95          # upper shaft half-width
 Z_BALC2 = 45.6     # second balcony (top of stage 2)
 H3 = 5.60          # belfry half-width
 Z_BALC3 = 59.6     # third balcony = viewing gallery at the base of the dome stage (324 steps)
-OCT_A = 4.05       # octagonal drum apothem
-Z_DRUM_TOP = 66.9
-DOME_R = 5.05
-Z_DOME0 = 67.7
-Z_DOME_TOP = 80.2
-Z_LANTERN_TOP = 84.9
+OCT_A = 4.9        # octagonal drum apothem (drum nearly as wide as the belfry stage)
+Z_DRUM_TOP = 68.4  # top of the drum cornice
+DOME_R = 5.3
+Z_DOME0 = 68.7     # dome springing
+Z_DOME_TOP = 75.9  # dome meets the lantern seat
+Z_LANTERN_TOP = 83.2
 Z_FINIAL_TOP = 87.5
 BAL_H = 1.1
 
@@ -957,50 +984,67 @@ def brick_bands(col, half, z_from, z_to, period=2.6, band_h=0.165, gaps=(), face
 
 
 def stage1_lower_shaft():
+    """Plain lower shaft (the part rebuilt 1966-68 plus the original shaft above): one modest
+    round-arched doorway on the south, slit windows, two string courses, thin brick bands, and a
+    single arched window per face under the first gallery."""
     col = COL_STAGE['T1_lower_shaft']
     z0, z1 = Z_SHAFT0, Z_BALC1
     shaft = prism('shaft1', ngon_pts(4, H1), z0, z1 - 0.9, 'M_Portland', col)
-    ARCH_W, ARCH_H, ARCH_Z = 3.2, 7.4, Z_SHAFT0 + 0.5
-    SMALL = [(-2.0, 13.0, 0.9, 1.3), (2.0, 13.0, 0.9, 1.3), (0, 18.0, 0.9, 1.3)]
-    TRI_Z, TRI_W, TRI_H = 24.2, 1.2, 6.2
+    ARCH_W, ARCH_H, ARCH_Z = 2.4, 5.4, Z_SHAFT0 + 0.3
+    SLITS = [(-1.6, 12.2), (1.6, 12.2), (-1.6, 19.4), (1.6, 19.4)]       # (x, z_bottom), 0.6 × 2.4
+    SLIT_W, SLIT_H = 0.6, 2.4
+    TOP_Z, TOP_W, TOP_H = 25.0, 1.5, 5.2                                 # arched window under gallery 1
     cutters = []
     for f in range(4):
-        c = [arch_cutter('cut_arch1', ARCH_W, ARCH_H, 1.0, H1, ARCH_Z)]
-        for (wx, wz, ww, wh) in SMALL:
-            c.append(rect_cutter('cut_w1', ww, wh, 0.8, H1, wz, wx))
-        for wx in (-2.2, 0.0, 2.2):
-            c.append(arch_cutter('cut_tri', TRI_W, TRI_H, 0.9, H1, TRI_Z, wx))
+        c = []
+        if f == 0:
+            c.append(arch_cutter('cut_arch1', ARCH_W, ARCH_H, 1.2, H1, ARCH_Z))
+        else:
+            c.append(rect_cutter('cut_base_w', 0.9, 1.4, 0.8, H1, Z_SHAFT0 + 3.2))
+        for (wx, wz) in SLITS:
+            c.append(rect_cutter('cut_slit', SLIT_W, SLIT_H, 0.8, H1, wz, wx))
+        c.append(arch_cutter('cut_top', TOP_W, TOP_H, 0.9, H1, TOP_Z))
         cutters += face_template(c, f)
     boolean_cut(shaft, cutters)
     for f in range(4):
-        g = [arch_surround('arch1_surround', ARCH_W, ARCH_H, 0.42, 0.22, H1, ARCH_Z, 'M_Portland_Base', col=col),
-             box('arch1_key', (0.5, 0.36, 0.95), (0, -H1 - 0.3, ARCH_Z + ARCH_H - 0.15), 'M_Portland_Base', col)]
+        g = []
         if f == 0:
-            g.append(box('door', (3.0, 0.12, 4.2), (0, -H1 + 0.95, ARCH_Z + 2.1), 'M_Door', col))
-            g.append(box('door_fan', (3.0, 0.06, 3.0), (0, -H1 + 0.95, ARCH_Z + 5.6), 'M_Glass', col))
-            for i in range(-3, 4):
-                g.append(box('door_mull%d' % i, (0.07, 0.08, 7.0), (i * 0.43, -H1 + 0.9, ARCH_Z + 3.6), 'M_Iron', col))
+            g.append(arch_surround('arch1_surround', ARCH_W, ARCH_H, 0.34, 0.16, H1, ARCH_Z, 'M_Portland_Base', col=col))
+            g.append(box('arch1_key', (0.42, 0.3, 0.75), (0, -H1 - 0.22, ARCH_Z + ARCH_H - 0.12), 'M_Portland_Base', col))
+            g.append(box('door', (2.3, 0.12, 3.6), (0, -H1 + 1.15, ARCH_Z + 1.8), 'M_Door', col))
+            g.append(box('door_fan', (2.3, 0.06, 1.9), (0, -H1 + 1.15, ARCH_Z + 3.6 + 0.85), 'M_Glass', col))
+            for i in range(-2, 3):
+                g.append(box('door_mull%d' % i, (0.06, 0.08, 1.8), (i * 0.46, -H1 + 1.1, ARCH_Z + 4.4), 'M_Iron', col))
+            g.append(box('door_rail', (2.3, 0.08, 0.12), (0, -H1 + 1.1, ARCH_Z + 3.6), 'M_Iron', col))
+            # a flight of steps from the terrace up to the door sill
+            nst = 8
+            rise = (ARCH_Z - Z_TERRACE) / nst
+            tread = 0.3
+            for k in range(nst):
+                depth = (nst - k) * tread + 0.45
+                g.append(box('door_step%d' % k, (3.6, depth, rise), (0, -H1 - depth / 2, Z_TERRACE + rise * (k + 0.5)),
+                             'M_Portland_Base', col))
+            for sx in (-1, 1):
+                g.append(box('door_cheek%s' % ('L' if sx < 0 else 'R'), (0.35, nst * tread + 0.6, ARCH_Z - Z_TERRACE + 0.25),
+                             (sx * 1.95, -H1 - (nst * tread + 0.6) / 2, Z_TERRACE + (ARCH_Z - Z_TERRACE + 0.25) / 2), 'M_Portland_Base', col))
         else:
-            g.append(box('arch1_glass', (3.0, 0.05, 7.0), (0, -H1 + 0.98, ARCH_Z + 3.6), 'M_Glass', col))
-            for i in range(-3, 4):
-                g.append(box('arch1_mull%d' % i, (0.07, 0.08, 7.0), (i * 0.43, -H1 + 0.9, ARCH_Z + 3.6), 'M_Iron', col))
-            g.append(box('arch1_tr', (3.0, 0.08, 0.1), (0, -H1 + 0.9, ARCH_Z + 4.2), 'M_Iron', col))
-        for (wx, wz, ww, wh) in SMALL:
-            g.append(box('w1_glass', (ww, 0.05, wh), (wx, -H1 + 0.6, wz + wh / 2), 'M_Glass', col))
-            g.append(box('w1_sill', (ww + 0.3, 0.3, 0.1), (wx, -H1 - 0.05, wz - 0.05), 'M_Portland', col))
-        for wx in (-2.2, 0.0, 2.2):
-            g.append(arch_surround('tri_surround', TRI_W, TRI_H, 0.16, 0.10, H1, TRI_Z, col=col, x=wx))
-            g.append(box('tri_glass', (1.1, 0.05, 5.8), (wx, -H1 + 0.7, TRI_Z + 2.9), 'M_Glass', col))
-            g.append(box('tri_mull', (0.06, 0.08, 5.8), (wx, -H1 + 0.6, TRI_Z + 2.9), 'M_Iron', col))
-            for k in range(1, 5):
-                g.append(box('tri_tr%d' % k, (1.1, 0.08, 0.06), (wx, -H1 + 0.6, TRI_Z + k * 1.2), 'M_Iron', col))
-        g.append(box('tri_sill', (6.2, 0.36, 0.22), (0, -H1 - 0.1, TRI_Z - 0.1), 'M_Portland', col))
+            g.append(box('base_w_glass', (0.85, 0.05, 1.35), (0, -H1 + 0.6, Z_SHAFT0 + 3.2 + 0.7), 'M_Glass', col))
+            g.append(box('base_w_sill', (1.2, 0.3, 0.1), (0, -H1 - 0.05, Z_SHAFT0 + 3.15), 'M_Portland', col))
+        for (wx, wz) in SLITS:
+            g.append(box('slit_glass', (SLIT_W - 0.05, 0.05, SLIT_H - 0.05), (wx, -H1 + 0.6, wz + SLIT_H / 2), 'M_Glass', col))
+            g.append(box('slit_sill', (SLIT_W + 0.3, 0.26, 0.1), (wx, -H1 - 0.04, wz - 0.05), 'M_Portland', col))
+        g.append(arch_surround('top_surround', TOP_W, TOP_H, 0.2, 0.12, H1, TOP_Z, col=col))
+        g.append(box('top_glass', (TOP_W - 0.1, 0.05, TOP_H - 0.4), (0, -H1 + 0.7, TOP_Z + TOP_H / 2 - 0.2), 'M_Glass', col))
+        g.append(box('top_mull', (0.06, 0.08, TOP_H - 0.4), (0, -H1 + 0.6, TOP_Z + TOP_H / 2 - 0.2), 'M_Iron', col))
+        for k in range(1, 4):
+            g.append(box('top_tr%d' % k, (TOP_W - 0.1, 0.08, 0.06), (0, -H1 + 0.6, TOP_Z + k * 1.2), 'M_Iron', col))
+        g.append(box('top_sill', (TOP_W + 0.6, 0.34, 0.2), (0, -H1 - 0.1, TOP_Z - 0.1), 'M_Portland', col))
         face_template(g, f)
     sweep_square('string1a', cornice_profile(0.35, 0.18, 'string'), H1, 10.6, 'M_Portland', col)
-    sweep_square('string1b', cornice_profile(0.35, 0.18, 'string'), H1, 22.6, 'M_Portland', col)
-    # red brick bands: interrupted by the entrance arch low down, by the small windows higher up
-    brick_bands(col, H1, Z_SHAFT0 + 1.4, 10.4, gaps=[(-ARCH_W / 2 - 0.5, ARCH_W / 2 + 0.5)])
-    brick_bands(col, H1, 11.4, 22.4, gaps=[(-2.65, -1.35), (1.35, 2.65), (-0.65, 0.65)])
+    sweep_square('string1b', cornice_profile(0.35, 0.18, 'string'), H1, 23.4, 'M_Portland', col)
+    # thin red brick bands: interrupted by the doorway low down, by the slits higher up
+    brick_bands(col, H1, Z_SHAFT0 + 1.6, 10.4, gaps=[(-ARCH_W / 2 - 0.45, ARCH_W / 2 + 0.45), (-0.7, 0.7)])
+    brick_bands(col, H1, 11.4, 23.2, gaps=[(-2.05, -1.15), (1.15, 2.05)])
     sweep_square('cornice1', cornice_profile(0.9, 0.85, 'classical'), H1, z1 - 0.9, 'M_Portland', col)
     hb = H1 + 0.85 + 0.15
     prism('balc1_slab', ngon_pts(4, hb), z1 - 0.05, z1 + 0.08, 'M_Portland', col)
@@ -1103,10 +1147,10 @@ def stage3_belfry():
 
 
 def dome_profile(R, z0, ztop, rtop):
-    """Tall ribbed copper dome: a slight swell above the base, full convex belly, then a gentle
-    ogee taper into the lantern seat (radius rtop)."""
-    ctrl = [(0.00, 1.00), (0.07, 1.035), (0.20, 1.01), (0.36, 0.92), (0.50, 0.78), (0.63, 0.60),
-            (0.75, 0.44), (0.86, 0.33), (0.94, 0.28), (1.00, rtop / R)]
+    """Full, ribbed copper dome, only slightly pointed: a short vertical start, a round belly,
+    then a straighter run up into the lantern seat (radius rtop)."""
+    ctrl = [(0.00, 1.00), (0.08, 1.01), (0.22, 0.97), (0.38, 0.89), (0.54, 0.77), (0.68, 0.63),
+            (0.80, 0.50), (0.90, 0.39), (0.96, 0.33), (1.00, rtop / R)]
     n = 14 if Q else 28
     pts = []
     for t, rr in _catmull_rom(ctrl, n):
@@ -1115,80 +1159,83 @@ def dome_profile(R, z0, ztop, rtop):
 
 
 def stage4_dome():
+    """Dome stage: a wide octagonal drum (arched windows on the cardinal faces), stout semicircular
+    turrets wrapped into the four corners on the diagonal faces – each with a copper domelet and a
+    sloping strut (flying buttress) up to the dome – then the full ribbed copper dome, lantern and
+    gilded finial."""
     col = COL_STAGE['T4_dome_stage']
     z0 = Z_BALC3 + 0.08
     copper = 'M_Copper'
-    # octagonal drum: windows on the four diagonal faces, semicircular turrets on the cardinal faces
-    drum = prism('drum', ngon_pts(8, OCT_A), z0, Z_DRUM_TOP - 0.7, 'M_Portland', col)
-    WD, HD, ZD = 1.25, 4.2, z0 + 1.6
+    DRUM_TOP = Z_DRUM_TOP - 0.8                      # top of the drum wall, under its cornice
+    drum = prism('drum', ngon_pts(8, OCT_A), z0, DRUM_TOP, 'M_Portland', col)
+    WD, HD, ZD = 1.7, 5.2, z0 + 1.8
     cutters = []
-    for i in (1, 3, 5, 7):
-        c = arch_cutter('cut_drum', WD, HD, 0.8, OCT_A, ZD)
+    for i in (0, 2, 4, 6):
+        c = arch_cutter('cut_drum', WD, HD, 0.9, OCT_A, ZD)
         rot_z(c, i * pi / 4 + pi / 2)
         cutters.append(c)
     boolean_cut(drum, cutters)
+    half_flat = OCT_A * tan(pi / 8)
     for i in range(8):
         a = i * pi / 4 + pi / 2
-        g = [box('drum_pil', (0.42, 0.16, Z_DRUM_TOP - 0.7 - z0), (OCT_A * tan(pi / 8) - 0.21, -OCT_A - 0.08, (z0 + Z_DRUM_TOP - 0.7) / 2),
-                 'M_Portland', col)]
-        if i % 2 == 1:
-            g.append(arch_surround('drum_surround', WD, HD, 0.16, 0.1, OCT_A, ZD, col=col))
-            g.append(box('drum_glass', (1.15, 0.05, 4.3), (0, -OCT_A + 0.6, ZD + 2.2), 'M_Glass', col))
-            g.append(box('drum_mull', (0.06, 0.08, 4.3), (0, -OCT_A + 0.5, ZD + 2.2), 'M_Iron', col))
+        g = [box('drum_pil', (0.46, 0.18, DRUM_TOP - z0), (half_flat - 0.23, -OCT_A - 0.09, (z0 + DRUM_TOP) / 2), 'M_Portland', col)]
+        if i % 2 == 0:
+            g.append(arch_surround('drum_surround', WD, HD, 0.2, 0.12, OCT_A, ZD, col=col))
+            g.append(box('drum_glass', (WD - 0.1, 0.05, HD - 0.3), (0, -OCT_A + 0.7, ZD + HD / 2 - 0.15), 'M_Glass', col))
+            g.append(box('drum_mull', (0.07, 0.09, HD - 0.3), (0, -OCT_A + 0.6, ZD + HD / 2 - 0.15), 'M_Iron', col))
             for k in range(1, 4):
-                g.append(box('drum_tr%d' % k, (1.15, 0.08, 0.06), (0, -OCT_A + 0.5, ZD + k * 1.1), 'M_Iron', col))
+                g.append(box('drum_tr%d' % k, (WD - 0.1, 0.09, 0.06), (0, -OCT_A + 0.6, ZD + k * 1.25), 'M_Iron', col))
+            g.append(box('drum_sill', (WD + 0.6, 0.36, 0.2), (0, -OCT_A - 0.1, ZD - 0.1), 'M_Portland', col))
+            g.append(box('drum_rail', (WD + 0.2, 0.05, 0.9), (0, -OCT_A - 0.14, ZD + 0.5), 'M_Iron', col))
         for o in g:
             rot_z(o, a)
             o.name = '%s_%d' % (o.name, i)
-    sweep_ngon('drum_string', cornice_profile(0.3, 0.16, 'string'), 8, OCT_A, z0 + 1.3, 'M_Portland', col)
-    sweep_ngon('drum_cornice', cornice_profile(0.7, 0.7, 'classical'), 8, OCT_A, Z_DRUM_TOP - 0.7, 'M_Portland', col)
-    for i in range(4):
-        a = i * pi / 2 + pi / 2
-        cx, cy = (Matrix.Rotation(a, 2) @ Vector((0, -OCT_A)))
-        cylinder('turret_%d' % i, 1.05, z0, Z_DRUM_TOP - 0.55, 'M_Portland', col, cx, cy, segs=20 if Q else 32)
-        sweep_ngon('turret_band_%d' % i, cornice_profile(0.2, 0.12, 'string'), 24, 1.05, z0 + 3.0, 'M_Portland', col, cx, cy, rot=0)
-        lathe('turret_cap_%d' % i, [(1.2, Z_DRUM_TOP - 0.55), (1.2, Z_DRUM_TOP - 0.35), (1.1, Z_DRUM_TOP - 0.2), (0.95, Z_DRUM_TOP + 0.35),
-                                    (0.65, Z_DRUM_TOP + 0.85), (0.3, Z_DRUM_TOP + 1.15), (0.0, Z_DRUM_TOP + 1.3)], copper, col,
-              segs=20 if Q else 32, cx=cx, cy=cy)
-        lathe('turret_fin_%d' % i, [(0, Z_DRUM_TOP + 1.2), (0.05, Z_DRUM_TOP + 1.2), (0.05, Z_DRUM_TOP + 1.7), (0.16, Z_DRUM_TOP + 1.85),
-                                    (0.0, Z_DRUM_TOP + 2.05)], 'M_Gold', col, segs=12, cx=cx, cy=cy)
-        for k in range(3):
-            zz = z0 + 1.0 + k * 2.2
-            b = box('turret_slit', (0.22, 0.4, 1.1), (0, -OCT_A - 1.05 + 0.1, zz + 0.55), 'M_Glass', col)
+    sweep_ngon('drum_string', cornice_profile(0.3, 0.16, 'string'), 8, OCT_A, z0 + 1.4, 'M_Portland', col)
+    sweep_ngon('drum_cornice', cornice_profile(0.8, 0.75, 'classical'), 8, OCT_A, DRUM_TOP, 'M_Portland', col)
+    # semicircular corner turrets on the diagonal faces, with copper domelets and struts to the dome
+    TR = 1.35
+    T_TOP = z0 + 6.4
+    T_D = 6.35                                           # turret centre along the diagonal (hugs the drum, fills the corner)
+    for i in (1, 3, 5, 7):
+        a = i * pi / 4 + pi / 2
+        d = Matrix.Rotation(a, 2) @ Vector((0, -1))         # outward normal of this diagonal face
+        cx, cy = d * T_D
+        cylinder('turret_%d' % i, TR, z0, T_TOP, 'M_Portland', col, cx, cy, segs=24 if Q else 40)
+        sweep_ngon('turret_base_%d' % i, cornice_profile(0.5, 0.18, 'plinth'), 32, TR, z0, 'M_Portland', col, cx, cy, rot=0)
+        sweep_ngon('turret_band_%d' % i, cornice_profile(0.22, 0.12, 'string'), 32, TR, z0 + 3.2, 'M_Portland', col, cx, cy, rot=0)
+        sweep_ngon('turret_cor_%d' % i, cornice_profile(0.45, 0.32, 'classical'), 32, TR, T_TOP - 0.45, 'M_Portland', col, cx, cy, rot=0)
+        # low copper domelet on a ledge, gilt finial
+        RC = 1.05
+        lathe('turret_cap_%d' % i, [(RC + 0.12, T_TOP), (RC + 0.14, T_TOP + 0.15), (RC, T_TOP + 0.35), (RC * 0.86, T_TOP + 0.85),
+                                    (RC * 0.58, T_TOP + 1.3), (RC * 0.25, T_TOP + 1.6), (0.0, T_TOP + 1.72)], copper, col,
+              segs=24 if Q else 40, cx=cx, cy=cy)
+        lathe('turret_fin_%d' % i, [(0, T_TOP + 1.62), (0.06, T_TOP + 1.62), (0.06, T_TOP + 2.15), (0.17, T_TOP + 2.32), (0.0, T_TOP + 2.55)],
+              'M_Gold', col, segs=12, cx=cx, cy=cy)
+        for k in range(2):
+            zz = z0 + 1.5 + k * 2.5
+            b = box('turret_slit', (0.26, 0.5, 1.3), (0, -T_D - TR + 0.15, zz + 0.65), 'M_Glass', col)
             rot_z(b, a)
             b.name = 'turret_slit_%d_%d' % (i, k)
-    # four corner pinnacles on the square tower top + flying buttresses to the drum
-    pin_a = 0.72
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            tag = '%s%s' % ('E' if sx > 0 else 'W', 'N' if sy > 0 else 'S')
-            cx, cy = sx * (H3 - 0.55), sy * (H3 - 0.55)
-            prism('pinnacle_' + tag, ngon_pts(8, pin_a, 0), z0, z0 + 5.4, 'M_Portland', col, cx, cy)
-            sweep_ngon('pinnacle_cor_' + tag, cornice_profile(0.35, 0.3, 'classical'), 8, pin_a, z0 + 5.4, 'M_Portland', col, cx, cy, rot=0)
-            lathe('pinnacle_cap_' + tag, [(1.0, z0 + 5.75), (1.0, z0 + 5.9), (0.88, z0 + 6.1), (0.72, z0 + 6.8), (0.45, z0 + 7.4),
-                                          (0.18, z0 + 7.8), (0, z0 + 7.95)], copper, col, segs=16 if Q else 24, cx=cx, cy=cy)
-            lathe('pinnacle_fin_' + tag, [(0, z0 + 7.85), (0.045, z0 + 7.85), (0.045, z0 + 8.4), (0.15, z0 + 8.55), (0, z0 + 8.75)],
-                  'M_Gold', col, segs=12, cx=cx, cy=cy)
-            for k in range(2):
-                zz = z0 + 1.2 + k * 2.2
-                box('pin_slit_%s_%da' % (tag, k), (0.2, 0.3, 0.9), (cx + sx * (pin_a - 0.05), cy, zz + 0.45), 'M_Glass', col)
-                box('pin_slit_%s_%db' % (tag, k), (0.3, 0.2, 0.9), (cx, cy + sy * (pin_a - 0.05), zz + 0.45), 'M_Glass', col)
-            p0 = Vector((cx - sx * 0.5, cy - sy * 0.5, z0 + 5.3))
-            p1 = Vector((sx, sy, 0)).normalized() * (OCT_A - 0.25)
-            p1.z = Z_DRUM_TOP - 1.0
-            pts = []
-            n = 8
-            for i in range(n + 1):
-                t = i / n
-                p = p0.lerp(p1, t)
-                p.z = p0.z + (p1.z - p0.z) * (sin(t * pi / 2) ** 0.8)
-                pts.append(p)
-            sweep_rect_along('flybut_' + tag, pts, 0.55, 0.5, 'M_Portland', col)
-            mid = pts[4]
-            box('flybut_pier_' + tag, (0.4, 0.4, mid.z - (z0 + 0.2)), (mid.x, mid.y, (mid.z + z0 + 0.2) / 2), 'M_Portland', col)
+            s = box('turret_slit_sill', (0.5, 0.3, 0.08), (0, -T_D - TR - 0.05, zz - 0.04), 'M_Portland', col)
+            rot_z(s, a)
+            s.name = 'turret_slit_sill_%d_%d' % (i, k)
+        # flying buttress: springs from the turret cornice on the dome side (clear of the domelet)
+        # and leans up against the dome; a curved strut with a small pier under its foot
+        p0 = Vector((*(d * (T_D - RC - 0.05)), T_TOP + 0.05))
+        p1 = Vector((*(d * (DOME_R * 0.86)), Z_DOME0 + 2.6))
+        pts = []
+        n = 8
+        for k in range(n + 1):
+            t = k / n
+            p = p0.lerp(p1, t)
+            p.z = p0.z + (p1.z - p0.z) * (sin(t * pi / 2) ** 0.7)
+            pts.append(p)
+        sweep_rect_along('flybut_%d' % i, pts, 0.55, 0.62, 'M_Portland', col)
+        lathe('flybut_foot_%d' % i, [(0, 0), (0.4, 0), (0.4, 0.45), (0.28, 0.62), (0, 0.7)], 'M_Portland', col, segs=16,
+              cx=p0.x, cy=p0.y).location.z = T_TOP - 0.15
     # dome base ring (octagon → circle) and the ribbed copper dome
-    lathe('dome_ring', [(DOME_R - 0.2, Z_DRUM_TOP - 0.7), (DOME_R + 0.25, Z_DRUM_TOP - 0.2), (DOME_R + 0.35, Z_DRUM_TOP + 0.3),
-                        (DOME_R + 0.35, Z_DRUM_TOP + 0.5), (DOME_R + 0.1, Z_DRUM_TOP + 0.75), (DOME_R, Z_DOME0)],
+    lathe('dome_ring', [(DOME_R - 0.25, DRUM_TOP), (DOME_R + 0.25, DRUM_TOP + 0.35), (DOME_R + 0.35, DRUM_TOP + 0.6),
+                        (DOME_R + 0.35, Z_DRUM_TOP), (DOME_R + 0.12, Z_DRUM_TOP + 0.2), (DOME_R, Z_DOME0)],
           'M_Portland', col)
     prof = [(DOME_R, Z_DOME0 - 0.05)] + dome_profile(DOME_R, Z_DOME0, Z_DOME_TOP, 1.5)
     lathe('dome', prof, copper, col, segs=32 if Q else 64)
@@ -1223,28 +1270,36 @@ def stage4_dome():
         link_dup(rib_src, 'dome_rib_%d' % k, rot=(0, 0, 2 * pi * k / nrib), col=col)
     # lantern: octagonal arcaded cupola, small copper dome, gilded finial
     zl0 = Z_DOME_TOP
-    lathe('lantern_base', [(1.5, zl0 - 0.1), (1.7, zl0 + 0.15), (1.7, zl0 + 0.45), (1.45, zl0 + 0.6)], 'M_Portland', col, segs=32)
+    RL = 1.6
+    lathe('lantern_base', [(RL, zl0 - 0.1), (RL + 0.25, zl0 + 0.15), (RL + 0.25, zl0 + 0.5), (RL - 0.05, zl0 + 0.7)], 'M_Portland', col, segs=32)
     for i in range(8):
         a = pi / 8 + i * pi / 4
-        column('lantern_col_%d' % i, 0.13, zl0 + 0.6, zl0 + 2.8, col=col, cx=1.25 * cos(a), cy=1.25 * sin(a))
-    sweep_ngon('lantern_entab', [(0, 0), (0.35, 0), (0.35, 0.3), (0.45, 0.35), (0.45, 0.55), (0, 0.55)], 8, 1.15, zl0 + 2.8,
+        column('lantern_col_%d' % i, 0.15, zl0 + 0.7, zl0 + 3.9, col=col, cx=(RL - 0.3) * cos(a), cy=(RL - 0.3) * sin(a))
+    sweep_ngon('lantern_entab', [(0, 0), (0.38, 0), (0.38, 0.32), (0.5, 0.38), (0.5, 0.62), (0, 0.62)], 8, RL - 0.4, zl0 + 3.9,
                'M_Portland', col)
-    prism('lantern_core', ngon_pts(8, 0.85), zl0 + 0.5, zl0 + 2.8, 'M_Glass', col)
-    lathe('lantern_dome', [(1.6, zl0 + 3.35), (1.63, zl0 + 3.55), (1.5, zl0 + 3.8), (1.2, zl0 + 4.25), (0.75, zl0 + 4.6),
-                           (0.3, zl0 + 4.72), (0.0, Z_LANTERN_TOP + 0.05)], copper, col, segs=32)
+    prism('lantern_core', ngon_pts(8, 0.95), zl0 + 0.6, zl0 + 3.9, 'M_Glass', col)
+    for i in range(8):
+        a = i * pi / 4 + pi / 2
+        b = box('lantern_mull', (0.06, 0.08, 3.2), (0, -0.95, zl0 + 2.25), 'M_Iron', col)
+        rot_z(b, a)
+    zd = zl0 + 4.52
+    lathe('lantern_dome', [(RL + 0.1, zd), (RL + 0.14, zd + 0.2), (RL * 0.98, zd + 0.5), (RL * 0.8, zd + 1.1), (RL * 0.52, zd + 1.6),
+                           (RL * 0.2, zd + 1.9), (0.0, Z_LANTERN_TOP + 0.05)], copper, col, segs=32)
     zf = Z_LANTERN_TOP
     L = Z_FINIAL_TOP - zf
-    lathe('finial', [(0, zf - 0.1), (0.14, zf - 0.1), (0.14, zf + 0.22 * L / 2.6), (0.36, zf + 0.55 * L / 2.6), (0.36, zf + 0.75 * L / 2.6),
-                     (0.12, zf + 1.05 * L / 2.6), (0.08, zf + 1.7 * L / 2.6), (0.24, zf + 2.0 * L / 2.6), (0.24, zf + 2.15 * L / 2.6),
-                     (0.06, zf + 2.4 * L / 2.6), (0.0, Z_FINIAL_TOP)], 'M_Gold', col, segs=20)
+    lathe('finial', [(0, zf - 0.1), (0.16, zf - 0.1), (0.16, zf + 0.10 * L), (0.42, zf + 0.22 * L), (0.42, zf + 0.30 * L),
+                     (0.14, zf + 0.42 * L), (0.10, zf + 0.64 * L), (0.28, zf + 0.74 * L), (0.28, zf + 0.80 * L),
+                     (0.07, zf + 0.90 * L), (0.0, Z_FINIAL_TOP)], 'M_Gold', col, segs=20)
 
 
 # ----------------------------------------------------------------------------------
 # Lions (metaball sculptures converted to mesh) – the Imperial Institute lions, couchant
 # ----------------------------------------------------------------------------------
-def lion(name, loc, col=None):
-    """Couchant lion facing -Y (south), ~2.7 m long, on a 1.5 × 3.15 × 1.15 m plinth."""
+def lion(name, loc, col=None, mirror=False):
+    """Couchant lion facing -Y (south), chest up and head held high, ~2.8 m long, on a tall plain
+    plinth. mirror=True flips it left/right so the pair matches."""
     col = col or COL_STAGE['T5_lions']
+    mx = -1.0 if mirror else 1.0
     mb = bpy.data.metaballs.new(name + '_mb')
     mb.resolution = 0.12 if Q else 0.065
     mb.render_resolution = mb.resolution
@@ -1256,7 +1311,7 @@ def lion(name, loc, col=None):
     def el(kind, pos, size, rot=(0, 0, 0)):
         e = mb.elements.new()
         e.type = kind
-        e.co = pos
+        e.co = (pos[0] * mx, pos[1], pos[2])
         e.stiffness = 10.0
         if kind == 'BALL':
             e.radius = size * K
@@ -1269,31 +1324,31 @@ def lion(name, loc, col=None):
         e.rotation = Euler(rot).to_quaternion()
         return e
 
-    el('ELLIPSOID', (0, 0.25, 0.62), (0.52, 1.05, 0.45))          # body, lying
-    el('ELLIPSOID', (0, -0.55, 0.78), (0.58, 0.55, 0.55))         # chest / shoulders
-    el('ELLIPSOID', (0, -0.72, 1.02), (0.46, 0.40, 0.42))         # mane core
-    el('BALL', (0, -1.14, 1.22), 0.31)                             # head
-    el('ELLIPSOID', (0, -1.42, 1.12), (0.19, 0.24, 0.15))          # muzzle
-    el('ELLIPSOID', (0, -1.32, 1.31), (0.18, 0.14, 0.09))          # brow
-    el('BALL', (0, -1.62, 1.16), 0.07)                             # nose
-    el('BALL', (-0.17, -1.04, 1.50), 0.09)                         # ears
-    el('BALL', (0.17, -1.04, 1.50), 0.09)
+    el('ELLIPSOID', (0, 0.30, 0.60), (0.50, 1.00, 0.44))          # body, lying
+    el('ELLIPSOID', (0, -0.50, 0.86), (0.56, 0.50, 0.58))         # chest / shoulders, raised
+    el('ELLIPSOID', (0, -0.78, 1.22), (0.42, 0.36, 0.40))         # neck / mane core, upright
+    el('BALL', (0, -1.05, 1.52), 0.30)                             # head, held high
+    el('ELLIPSOID', (0, -1.34, 1.42), (0.19, 0.25, 0.15))          # muzzle, looking straight out
+    el('ELLIPSOID', (0, -1.24, 1.62), (0.19, 0.14, 0.09))          # brow
+    el('BALL', (0, -1.56, 1.45), 0.07)                             # nose
+    el('BALL', (-0.17, -0.95, 1.80), 0.09)                         # ears
+    el('BALL', (0.17, -0.95, 1.80), 0.09)
     # mane: a ruff of locks around the head (ring in the XZ plane, locks trailing back along Y)
     for j in range(13):
         a = pi * 0.02 + 2 * pi * j / 13
         rr = 0.44
-        el('ELLIPSOID', (rr * cos(a), -0.98 + 0.08 * abs(sin(a)), 1.20 + rr * sin(a) * 0.9), (0.13, 0.27, 0.13))
+        el('ELLIPSOID', (rr * cos(a), -0.90 + 0.08 * abs(sin(a)), 1.50 + rr * sin(a) * 0.9), (0.13, 0.27, 0.13))
     for j in range(9):
         a = pi * (j + 0.5) / 9
-        el('ELLIPSOID', (0.60 * cos(a), -0.66, 0.92 + 0.55 * sin(a)), (0.15, 0.30, 0.15))
+        el('ELLIPSOID', (0.58 * cos(a), -0.62, 1.05 + 0.55 * sin(a)), (0.15, 0.30, 0.15))
     for sx in (-1, 1):
         el('CAPSULE', (sx * 0.33, -1.05, 0.30), (0.15, 0.45), rot=(0, 0, pi / 2))   # forelegs stretched forward
         el('ELLIPSOID', (sx * 0.34, -1.62, 0.22), (0.17, 0.24, 0.14))              # fore paws
-        el('BALL', (sx * 0.46, 0.85, 0.48), 0.42)                                   # haunches
-        el('ELLIPSOID', (sx * 0.5, 0.45, 0.22), (0.16, 0.42, 0.14))                # hind legs tucked
-        el('ELLIPSOID', (sx * 0.52, 0.02, 0.2), (0.17, 0.24, 0.13))                # hind paws
-    for i, (x, y, z) in enumerate([(0.3, 1.28, 0.35), (0.62, 1.25, 0.28), (0.85, 1.0, 0.22), (0.9, 0.7, 0.2), (0.85, 0.42, 0.2)]):
-        el('BALL', (x, y, z), 0.13 if i < 4 else 0.18)                              # tail along the right flank
+        el('BALL', (sx * 0.46, 0.90, 0.48), 0.42)                                   # haunches
+        el('ELLIPSOID', (sx * 0.5, 0.50, 0.22), (0.16, 0.42, 0.14))                # hind legs tucked
+        el('ELLIPSOID', (sx * 0.52, 0.06, 0.2), (0.17, 0.24, 0.13))                # hind paws
+    for i, (x, y, z) in enumerate([(0.3, 1.30, 0.35), (0.62, 1.27, 0.28), (0.85, 1.02, 0.22), (0.9, 0.72, 0.2), (0.85, 0.44, 0.2)]):
+        el('BALL', (x, y, z), 0.13 if i < 4 else 0.18)                              # tail along the flank
     dg = bpy.context.evaluated_depsgraph_get()
     me = bpy.data.meshes.new_from_object(ob.evaluated_get(dg))
     me.name = name
@@ -1304,12 +1359,16 @@ def lion(name, loc, col=None):
     bpy.data.objects.remove(ob)
     bpy.data.metaballs.remove(mb)
     zmin = min(v.co.z for v in me.vertices)
-    lion_ob.location = (loc[0], loc[1], loc[2] + 1.15 - zmin)
+    lion_ob.location = (loc[0], loc[1], loc[2] + LION_PLINTH_H - zmin)
     STATS['objects'] += 1
-    box('%s_plinth_base' % name, (1.5, 3.15, 0.15), (loc[0], loc[1], loc[2] + 0.075), 'M_Portland_Base', col)
-    box('%s_plinth' % name, (1.35, 3.0, 0.82), (loc[0], loc[1], loc[2] + 0.56), 'M_Portland_Base', col)
-    box('%s_plinth_top' % name, (1.5, 3.15, 0.18), (loc[0], loc[1], loc[2] + 1.06), 'M_Portland_Base', col)
+    # tall plain plinth: base course, die, cap
+    box('%s_plinth_base' % name, (1.7, 3.4, 0.22), (loc[0], loc[1], loc[2] + 0.11), 'M_Portland_Base', col)
+    box('%s_plinth' % name, (1.5, 3.2, LION_PLINTH_H - 0.42), (loc[0], loc[1], loc[2] + 0.22 + (LION_PLINTH_H - 0.42) / 2), 'M_Portland_Base', col)
+    box('%s_plinth_top' % name, (1.66, 3.36, 0.2), (loc[0], loc[1], loc[2] + LION_PLINTH_H - 0.1), 'M_Portland_Base', col)
     return lion_ob
+
+
+LION_PLINTH_H = 1.6
 
 
 def inscription(name, text, loc, size=0.12, mat='M_Inscription', col=None, rot=(pi / 2, 0, 0), depth=0.006):
@@ -1338,12 +1397,12 @@ def inscription(name, text, loc, size=0.12, mat='M_Inscription', col=None, rot=(
 
 
 def build_lions(base_half):
-    y = -base_half - 1.9
-    for sx in (-1, 1):
-        lion('lion_%s' % ('W' if sx < 0 else 'E'), (sx * 3.6, y, 0.0))
+    y = -base_half - 2.9
+    lion('lion_W', (-3.8, y, 0.0), mirror=False)
+    lion('lion_E', (3.8, y, 0.0), mirror=True)
     # the mason's marks: on the front face of the lion plinths, readable from the lawn
-    inscription('mark_W', 'J  &  C', (-3.6, y - 1.575 - 0.004, 0.56), size=0.16)
-    inscription('mark_E', 'V · XXI · MMXXVI', (3.6, y - 1.575 - 0.004, 0.56), size=0.11)
+    inscription('mark_W', 'J  &  C', (-3.8, y - 1.6 - 0.004, 0.95), size=0.16)
+    inscription('mark_E', 'V · XXI · MMXXVI', (3.8, y - 1.6 - 0.004, 0.95), size=0.11)
 
 
 # ----------------------------------------------------------------------------------
@@ -1356,12 +1415,12 @@ def tree(name, loc, h=17.0, spread=8.5, col=None, seed=0):
     r0 = 0.42 * h / 17
     lathe('%s_trunk' % name, [(r0 * 1.25, 0), (r0, 0.6), (r0 * 0.85, trunk_h * 0.6), (r0 * 0.6, trunk_h), (r0 * 0.3, trunk_h + 2.0),
                               (0, trunk_h + 2.6)], 'M_Bark', col, segs=12, cx=loc[0], cy=loc[1])
-    nb = 5 if Q else 9
+    nb = 6 if Q else 11
     for i in range(nb):
-        a = 2 * pi * i / nb + rnd.uniform(-0.3, 0.3)
-        d = spread * rnd.uniform(0.12, 0.45)
+        a = 2 * pi * i / nb + rnd.uniform(-0.35, 0.35)
+        d = spread * rnd.uniform(0.10, 0.46)
         cx, cy = loc[0] + d * cos(a), loc[1] + d * sin(a)
-        cz = trunk_h + rnd.uniform(0.05, 0.6) * (h - trunk_h)
+        cz = trunk_h + rnd.uniform(0.05, 0.62) * (h - trunk_h)
         sweep_rect_along('%s_br%d' % (name, i), [(loc[0], loc[1], trunk_h * 0.8), ((cx + loc[0]) / 2, (cy + loc[1]) / 2, (trunk_h + cz) / 2), (cx, cy, cz)],
                          0.22, 0.22, 'M_Bark', col)
         bm = bmesh.new()
@@ -1424,12 +1483,12 @@ def build_context():
     prism('Chemistry', [(-80, -85), (60, -85), (60, -59), (-80, -59)], 0, 19.0, 'M_Chem', col)
     prism('West_block', [(-110, -60), (-56, -60), (-56, 30), (-110, 30)], 0, 22.0, 'M_RSM', col)
     prism('West_block_roof', [(-110, -60), (-56, -60), (-56, 30), (-110, 30)], 22.0, 22.6, 'M_Kerb', col)
-    for i, x in enumerate([-40, -28, -16, -4, 8, 20, 30, 60]):
-        tree('plane_S%d' % i, (x, -41.8, 0), h=random.uniform(15, 19), spread=random.uniform(8, 10), seed=100 + i)
-    for i, y in enumerate([-30, -16, -2, 12]):
-        tree('plane_E%d' % i, (74.0, y, 0), h=random.uniform(13, 17), spread=random.uniform(7, 9), seed=200 + i)
-    for i, (x, y) in enumerate([(-40, 10), (-40, -6), (-40, -22)]):
-        tree('plane_W%d' % i, (x, y, 0), h=random.uniform(14, 18), spread=random.uniform(8, 10), seed=300 + i)
+    for i, x in enumerate([-42, -28, -14, 0, 13, 72]):
+        tree('plane_S%d' % i, (x, -41.8, 0), h=random.uniform(20, 25), spread=random.uniform(12, 15), seed=100 + i)
+    for i, y in enumerate([-30, -14, 2, 16]):
+        tree('plane_E%d' % i, (74.0, y, 0), h=random.uniform(17, 22), spread=random.uniform(10, 13), seed=200 + i)
+    for i, (x, y) in enumerate([(-40, 10), (-40, -8), (-40, -26)]):
+        tree('plane_W%d' % i, (x, y, 0), h=random.uniform(18, 23), spread=random.uniform(11, 14), seed=300 + i)
 
 
 # ----------------------------------------------------------------------------------
@@ -1513,7 +1572,7 @@ def look_at_cam(name, loc, target, lens=24, shift_y=0.0, sensor=36.0, dof=None):
 def build_cameras():
     cams = {}
     cams['lawn'] = look_at_cam('cam_lawn', (46.0, -36.5, 1.65), (0.0, 0.0, 30.0), lens=24, shift_y=0.10)
-    cams['dome'] = look_at_cam('cam_dome', (58.0, -34.0, 1.65), (0.0, 0.0, 73.0), lens=100)
+    cams['dome'] = look_at_cam('cam_dome', (58.0, -34.0, 1.65), (0.0, 0.0, 71.0), lens=100)
     cams['aerial'] = look_at_cam('cam_aerial', (-120.0, -170.0, 95.0), (6.0, 2.0, 36.0), lens=40)
     cams['lions'] = look_at_cam('cam_lions', (9.0, -26.0, 1.4), (-1.0, -12.5, 2.2), lens=50, dof=(14.0, 4.0))
     SC.camera = cams['lawn']
