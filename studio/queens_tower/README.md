@@ -18,10 +18,10 @@
 | --- | --- |
 | `queens_tower.py` | **单文件脚本**，在 Blender 里 Run Script 即可重建整个场景（见下） |
 | `queens_tower.blend` | 已生成好的场景（Blender 5.2 保存，含 4 个相机、天空、渲染设置，F12 直接渲） |
-| `renders/queens_tower_lawn.png` | 主视角：Queen's Lawn 东南角，24 mm，1536×2048，Cycles 320 采样 + 降噪 |
-| `renders/queens_tower_dome.png` | 100 mm 长焦看穹顶一段：八角鼓座、半圆小塔、飞扶壁、角塔、灯笼 |
-| `renders/queens_tower_lions.png` | 南台阶脚下的两头狮子（景深） |
-| `renders/queens_tower_aerial.png` | 西南高空检查视角（整体体量与校园关系） |
+| `renders/queens_tower_lawn.png` | 主视角：Queen's Lawn 东南角，24 mm，1536×2048，Cycles 320 采样 + 降噪（4 核 CPU 11 分钟） |
+| `renders/queens_tower_dome.png` | 100 mm 长焦看穹顶一段：八角鼓座、抱角的半圆小塔、飞扶壁、灯笼（192 采样） |
+| `renders/queens_tower_lions.png` | 南台阶脚下的两头狮子（50 mm，景深，192 采样） |
+| `renders/queens_tower_aerial.png` | 西南高空检查视角（整体体量与校园关系，192 采样） |
 
 ## 怎么运行
 
@@ -29,7 +29,7 @@
 
 1. 打开 Blender 5.x（实测 5.2 LTS）。
 2. *Scripting* 工作区 → *Text* → *Open* 选 `queens_tower.py` → *Run Script*（Alt+P）。
-3. 一两秒后塔就立在场景里了。相机 `cam_lawn` / `cam_dome` / `cam_lions` / `cam_aerial` 都在 `Studio` 集合，
+3. 一两秒后塔就立在场景里了（1552 个物体 / 约 20 万面）。相机 `cam_lawn` / `cam_dome` / `cam_lions` / `cam_aerial` 都在 `Studio` 集合，
    当前相机是 `cam_lawn`，按 **F12** 渲染（Cycles，CPU 可渲，4 核约 10–15 分钟）。
    - 脚本会用一个空场景替换当前场景，先存好自己的工作。
    - 想运行后立刻渲染：把文件顶部 `RENDER_ON_RUN = 'auto'` 改成 `True`。
